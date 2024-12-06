@@ -5,6 +5,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /** 
 * Mem addr range
@@ -63,8 +64,110 @@ enum
     TRAP    
 };
 
+uint16_t MemRead(uint16_t r);
+uint16_t ReadImage(const char *f);
+
 int
-main(void)
+main(int argc, const char **argv)
 {
+    int j, alive; 
+
+    if (argc < 2)
+    {
+        printf("lc3 [file-image] ...\n");
+        exit(2); /* invalid args */
+    }
+
+    for (j = 1; j < argc; j++)
+    {
+        if (!ReadImage(argv[j]))
+        {
+            printf("failed to load image: %s\n", argv[j]);
+            exit(1);
+        }
+    }
+
+    /* set zero flag. one flag must always be set */
+    reg[FLAGS] = FZRO;
+    
+    /* set PC */
+    enum { PCSTART = 0x3000 };
+    reg[PC] = PCSTART;
+
+    alive = 1;
+    while (alive)
+    {
+        /* FETCH */
+        uint16_t instr = MemRead(reg[PC]++); /* 16 bit instruction */
+        uint16_t op    = instr >> 12; /* top 4 bits set opcode */
+        switch (op)
+        {
+        case BR:
+        {
+            break;
+        }
+        case ADD:
+        {
+            break;
+        }
+        case LD:
+        {
+            break;
+        }
+        case ST:
+        {
+            break;
+        }
+        case JSR:
+        {
+            break;
+        }
+        case AND:
+        {
+            break;
+        }
+        case LDR:
+        {
+            break;
+        }
+        case STR:
+        {
+            break;
+        }
+        case NOT:
+        {
+            break;
+        }
+        case LDI:
+        {
+            break;
+        }
+        case STI:
+        {
+            break;
+        }
+        case JMP:
+        {
+            break;
+        }
+        case LEA:
+        {
+            break;
+        }
+        case TRAP:
+        {
+            break;
+        }
+        case RES:
+        case RTI:
+        default:
+        {
+            /* ERROR */
+            break;
+        }
+
+        }
+    }
+
     return 0;
 }
