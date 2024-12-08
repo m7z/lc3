@@ -1,11 +1,29 @@
 /**
-* Little computer 3
+* LC-3
 * word size = 16 bits
 */
 
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#if defined(__GNUC__) || defined(__clang__)
+#define Trap() __buildtin_trap()
+#else
+#error Unknown trap intrinsic for this compiler.
+#endif
+
+#define AssertAlways(x) \
+    do { \
+        if(!(x)) { \
+        printf("\n%s(%d): assertion failed: %s\n", __FILE__, __LINE__, #x); \
+        Trap(); \
+        } \
+    } while(0)
+
+#define Assert(x)           AssertAlways(x)
+#define NotImplemented      Assert(!"Not Implemented!")
+#define ArrayCount(Array)   (sizeof(Array) / sizeof((Array)[0]))
 
 /** 
 * Mem addr range
@@ -74,7 +92,10 @@ uint16_t
 mem_read(uint16_t r);
 
 uint16_t
-read_image(const char *f);
+read_image(const char *filepath);
+
+uint16_t
+swap16(uint16_t x);
 
 void 
 update_flags(const uint16_t r)
@@ -180,6 +201,7 @@ main(int argc, const char **argv)
         default:
         {
             /* ERROR */
+            abort();
             break;
         }
 
