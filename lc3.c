@@ -12,40 +12,34 @@
 * 0000..FFFF
 */
 
-#define MAX_CAPACITY (1 << 16) /* 2**16 -> 65536 */
-uint16_t mem[MAX_CAPACITY];
+enum { MAX_MEM = (1 << 16); }; /* 2**16 -> 65536 */
 
 /**
 * Registers
-* General purpose R0..R7 (16 bit width)
+* 16 bit width
 */
-enum
-{
-    R0 = 0,
-    R1,
-    R2,
-    R3,
-    R4,
-    R5,
-    R6,
-    R7,
-    PC,    /* progam counter */
-    FLAGS, /* processor flags (CONDITIONS?) */
+
+enum {
+    R0 = 0, /* general purpose */
+    R1,     /* general purpose */
+    R2,     /* general purpose */
+    R3,     /* general purpose */
+    R4,     /* general purpose */
+    R5,     /* general purpose */
+    R6,     /* general purpose */
+    R7,     /* general purpose */
+    PC,     /* progam counter  */
+    FLAGS,  /* processor flags */
     RCOUNT,
 };
 
-uint16_t reg[RCOUNT];
-
-enum 
-{
-    FPOS = 1 << 0,  /* P flag */
-    FZRO = 1 << 1,  /* Z flag */
-    FNEG = 1 << 2   /* N flag */
+enum {
+    FPOS = 1 << 0,  /* 1 (0001), positive */
+    FZRO = 1 << 1,  /* 2 (0010), zero     */
+    FNEG = 1 << 2   /* 4 (0100), negative */
 };
 
-
-enum
-{
+enum {
     BR = 0, /* branch */
     ADD,    /* add */
     LD,     /* load */
@@ -64,8 +58,31 @@ enum
     TRAP    
 };
 
-uint16_t MemRead(uint16_t r);
-uint16_t ReadImage(const char *f);
+uint16_t mem[MAX_MEM];
+uint16_t reg[RCOUNT];
+
+/*
+*  struct lc3 {
+*          struct memory       mem;
+*          struct registers    reg;    
+*          struct flags        fl;
+*          struct opcodes      op;
+*  };
+*/
+
+uint16_t
+mem_read(uint16_t r);
+
+uint16_t
+read_image(const char *f);
+
+void 
+update_flags(const uint16_t r)
+{
+    if      (reg[r] == 0)   reg[FLAGS] = FZRO;
+    else if (reg[r] >> 15)  reg[FLAGS] = FNEG;
+    else                    reg[r] = FPOS;
+}
 
 int
 main(int argc, const char **argv)
@@ -80,7 +97,7 @@ main(int argc, const char **argv)
 
     for (j = 1; j < argc; j++)
     {
-        if (!ReadImage(argv[j]))
+        if (!read_image(argv[j]))
         {
             printf("failed to load image: %s\n", argv[j]);
             exit(1);
@@ -98,7 +115,7 @@ main(int argc, const char **argv)
     while (alive)
     {
         /* FETCH */
-        uint16_t instr = MemRead(reg[PC]++); /* 16 bit instruction */
+        uint16_t instr = mem_read(reg[PC]++); /* 16 bit instruction */
         uint16_t op    = instr >> 12; /* top 4 bits set opcode */
         switch (op)
         {
