@@ -88,16 +88,20 @@ uint16_t reg[RCOUNT];
 *  };
 */
 
-uint16_t
+static uint16_t
 mem_read(uint16_t r);
 
-uint16_t
+static uint16_t
 read_image(const char *filepath);
 
-uint16_t
-swap16(uint16_t x);
+static inline uint16_t
+swap16(uint16_t x)
+{
+    return (x << 8) | (x >> 8);
+    
+}
 
-void 
+static void 
 update_flags(const uint16_t r)
 {
     if      (reg[r] == 0)   reg[FLAGS] = FZRO;
