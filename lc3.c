@@ -94,6 +94,27 @@ mem_read(uint16_t r);
 static uint16_t
 read_image(const char *filepath);
 
+
+static inline uin16_t
+sign_extend(uint16_t x, int bit_count)
+{
+    /**
+    * in order to extend a two's complement number
+    * we must preserve the sign by repeating the MSB
+    * in all the (new) extra bits, i.e., 1100 -> 1111 1100 
+    *
+    * we only extend the negative numbers (MSB = 1)
+    * positive number extension is given
+    */
+    if ((x >> (bit_count - 1)) & 1) { /* check MSB == 1 */
+
+        x |= (0xFFFF << bit_count); /* set to 1 all extra bits */
+    }
+
+    return x;
+}
+
+
 static inline uint16_t
 swap16(uint16_t x)
 {
