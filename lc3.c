@@ -30,7 +30,7 @@
 * 0000..FFFF
 */
 
-enum { MAX_MEM = (1 << 16); }; /* 2**16 -> 65536 */
+enum { MAX_MEM = (1 << 16) }; /* 2**16 -> 65536 */
 
 /**
 * Registers
@@ -95,7 +95,7 @@ static uint16_t
 read_image(const char *filepath);
 
 
-static inline uin16_t
+static inline uint16_t
 sign_extend(uint16_t x, int bit_count)
 {
     /**
