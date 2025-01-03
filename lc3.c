@@ -31,6 +31,7 @@
 */
 
 enum { MAX_MEM = (1 << 16) }; /* 2**16 -> 65536 */
+uint16_t mem[MAX_MEM];
 
 /**
 * Registers
@@ -49,7 +50,7 @@ enum {
     PC,     /* progam counter  */
     FLAGS,  /* processor flags */
     RCOUNT,
-};
+}; uint16_t reg[RCOUNT];
 
 enum {
     FPOS = 1 << 0,  /* 1 (0001), positive */
@@ -76,27 +77,15 @@ enum {
     TRAP    
 };
 
-uint16_t mem[MAX_MEM];
-uint16_t reg[RCOUNT];
-
-/*
-*  struct lc3 {
-*          struct memory       mem;
-*          struct registers    reg;    
-*          struct flags        fl;
-*          struct opcodes      op;
-*  };
-*/
+static uint16_t
+memread(uint16_t r);
 
 static uint16_t
-mem_read(uint16_t r);
-
-static uint16_t
-read_image(const char *filepath);
+readimage(const char *filepath);
 
 
 static inline uint16_t
-sign_extend(uint16_t x, int bit_count)
+signextend(uint16_t x, int bitcount)
 {
     /**
     * in order to extend a two's complement number
@@ -106,9 +95,9 @@ sign_extend(uint16_t x, int bit_count)
     * we only extend the negative numbers (MSB = 1)
     * positive number extension is given
     */
-    if ((x >> (bit_count - 1)) & 1) { /* check MSB == 1 */
+    if ((x >> (bitcount - 1)) & 1) { /* check MSB == 1 */
 
-        x |= (0xFFFF << bit_count); /* set to 1 all extra bits */
+        x |= (0xFFFF << bitcount); /* set to 1 all extra bits */
     }
 
     return x;
@@ -123,7 +112,7 @@ swap16(uint16_t x)
 }
 
 static void 
-update_flags(const uint16_t r)
+updateflags(const uint16_t r)
 {
     if      (reg[r] == 0)   reg[FLAGS] = FZRO;
     else if (reg[r] >> 15)  reg[FLAGS] = FNEG;
@@ -143,7 +132,7 @@ main(int argc, const char **argv)
 
     for (j = 1; j < argc; j++)
     {
-        if (!read_image(argv[j]))
+        if (!readimage(argv[j]))
         {
             printf("failed to load image: %s\n", argv[j]);
             exit(1);
@@ -161,7 +150,7 @@ main(int argc, const char **argv)
     while (alive)
     {
         /* FETCH */
-        uint16_t instr = mem_read(reg[PC]++); /* 16 bit instruction */
+        uint16_t instr = memread(reg[PC]++); /* 16 bit instruction */
         uint16_t op    = instr >> 12; /* top 4 bits set opcode */
         switch (op)
         {
