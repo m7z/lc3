@@ -122,14 +122,57 @@ readimage(const char *filepath)
 {
 }
 
+/**
+* -- NOTE(M): Two's complement and the sign extension technique
+*
+*             Two's complement is a method of signed integer representation,
+*             with a few very desirable properties, e.g., a single form for
+*             zero and arithmetic consistency between signed and unsigned.
+*                         
+*             Definition: The Two's complement of an N-bit number is the
+*             complement of that number with respect to 2^N
+*
+*             Given identical bit width, given any binary number and it's
+*             two's complement representation, the sum of this two equals 2^N
+*             e.g., 2-bit, N=2
+*                   2^N = 2^2 = 4 = 100
+*                   010 -> Binary representation of '2'
+*                   011 -> Two's complement of '10'
+*                   010 + 011 = 100 = 2^N
+*                   
+*             Two's complement algorithm:
+*                   Given absolute binary representation of some number x,
+*                   |x| (base-2)
+*                   1. Invert all bits (one's complement)
+*                   2. Add 1 to obtained number on step 1. (ignore any
+*                   overflow)
+*                   3. Leading bit is the sign bit (0 = Positive, 1 = Negative)
+*                   Verify:
+*                   Add place values together and subtract leading place (sign)
+*                   i.e., 101 = -(1*2^2)+(0*2^1)+(1*2^0) = -4+0+1 = -3
+*
+*             Sign extension technique:
+*             or numerical value preservation given (new) greater width
+*             check the code in signextend() first (and the comments)
+*
+*             Consider this:
+*             1100 (base-2) = -4 decimal (two's complement)
+*             1100 (4-bit) -> 1111 1111 1111 1100 (16-bit)
+*             Two's complement of 1111 1111 1111 1100
+*             is:
+*                   1. Invert = 0000 0000 0000 0011
+*                   2. Add 1  = 0000 0000 0000 0100 = 4 in decimal
+*             Therefore,
+*             1100 and 1111 1111 1111 1100 are -4 decimal
+*/
 
 static inline uint16_t
 signextend(uint16_t x, int bitcount)
 {
-    /** -- NOTE
+    /**
     * In order to extend a two's complement number
     * we must preserve the sign by repeating the MSB
-    * in all the (new) extra bits, i.e., 1100 -> 1111 1100 
+    * in all the (new) extra bits, i.e., 1100 -> 1111 1111 1111 1100 
     *
     * we only extend the negative numbers (MSB = 1)
     * positive number extension is given

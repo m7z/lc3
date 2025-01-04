@@ -1,6 +1,14 @@
+# Little Computer 3 Virtual Machine
+Written for educational and exploration purposes.
+No intent on keeping fidelity with the original work.
+
+# -- Relevant links 
 https://en.wikipedia.org/wiki/Little_Computer_3
-https://www.jmeiners.com/lc3-vm/
+https://www.jmeiners.com/lc3-vm/ (main project trigger)
 https://www.jmeiners.com/lc3-vm/supplies/lc3-isa.pdf
 https://highered.mheducation.com/sites/0072467509/student_view0/lc-3_simulator.html
 -- LC3-B 
 https://users.ece.utexas.edu/~patt/07s.360N/handouts/360n.appC.pdf
+
+-- No access for this project --
+"Introduction to Computing Systems: From Bits & Gates to C/C++ & Beyond"
