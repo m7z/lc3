@@ -1,6 +1,6 @@
 /**
 * LC-3
-* word size = 16 bits
+* WORD SIZE = 16 bits
 */
 
 #include <inttypes.h>
@@ -26,16 +26,37 @@
 #define ArrayCount(Array)   (sizeof(Array) / sizeof((Array)[0]))
 
 /** 
-* Mem addr range
+* MEM ADDR RANGE
 * 0000..FFFF
+*
+* -- MEMORY MAP --
+* 0000 
+*  ..   Trap Vector Table
+* 00FF 
+* 0100  
+*  ..   Interrupt Vector Table
+* 01FF
+* 0200
+*  ..   Operating Systems and Supervisor Stack Pointer
+* 2FFF
+* 3000
+*  ..   Userspace
+* FDFF
+* FE00
+*  ..   Device register addr (memory mapped I/O)
+* FFFF
+* 
 */
 
 enum { MAX_MEM = (1 << 16) }; /* 2**16 -> 65536 */
-uint16_t mem[MAX_MEM];
+uint16_t mem[MAX_MEM]; 
 
 /**
-* Registers
-* 16 bit width
+* REGISTERS (16-bit width)
+* 8 General Purpose,   000..111
+* 1 Program counter == Instruction Pointer
+* 1 Condition codes == Processor Flags
+* ..
 */
 
 enum {
@@ -47,17 +68,31 @@ enum {
     R5,     /* general purpose */
     R6,     /* general purpose */
     R7,     /* general purpose */
-    PC,     /* progam counter  */
+    IP,     /* instruction pointer */ /* program counter */
     FLAGS,  /* processor flags */
     RCOUNT,
 }; uint16_t reg[RCOUNT];
 
+/**
+* PROCESSOR FLAGS 
+* LD, LDI, LDR, LEA and ADD, AND and NOT
+* load a result into one of the 8 general
+* purpose registers. Flags are set based
+* on whether the result, a 16-bit two's
+* complement number is NEGATIVE, POSITIVE
+* or ZERO.    
+*/
 enum {
-    FPOS = 1 << 0,  /* 1 (0001), positive */
-    FZRO = 1 << 1,  /* 2 (0010), zero     */
-    FNEG = 1 << 2   /* 4 (0100), negative */
+    FPOS = 1 << 0,  /* 0001 (1), positive */
+    FZRO = 1 << 1,  /* 0010 (2), zero     */
+    FNEG = 1 << 2   /* 0100 (4), negative */
 };
 
+/**
+* INSTRUCTIONS (16 bits)
+* Bits 15:12 -> opcode
+* Bits 11:0  -> extra info
+*/
 enum {
     BR = 0, /* branch */
     ADD,    /* add */
@@ -78,17 +113,21 @@ enum {
 };
 
 static uint16_t
-memread(uint16_t r);
+memread(uint16_t r)
+{
+}
 
 static uint16_t
-readimage(const char *filepath);
+readimage(const char *filepath)
+{
+}
 
 
 static inline uint16_t
 signextend(uint16_t x, int bitcount)
 {
-    /**
-    * in order to extend a two's complement number
+    /** -- NOTE
+    * In order to extend a two's complement number
     * we must preserve the sign by repeating the MSB
     * in all the (new) extra bits, i.e., 1100 -> 1111 1100 
     *
@@ -142,76 +181,77 @@ main(int argc, const char **argv)
     /* set zero flag. one flag must always be set */
     reg[FLAGS] = FZRO;
     
-    /* set PC */
-    enum { PCSTART = 0x3000 };
-    reg[PC] = PCSTART;
+    /* set IP */
+    enum { IPSTART = 0x3000 }; /* code origin */
+    reg[IP] = IPSTART;
 
-    alive = 1;
+    alive = 1; /* set to 0 by HALT (Trap) */
     while (alive)
     {
         /* FETCH */
-        uint16_t instr = memread(reg[PC]++); /* 16 bit instruction */
-        uint16_t op    = instr >> 12; /* top 4 bits set opcode */
+        uint16_t instr = memread(reg[IP]++); /* read 16-bit instr */
+        uint16_t op    = instr >> 12;        /* bits 15:12 (4) set opcode */
         switch (op)
         {
-        case BR:
+        case BR:    /* branch */
         {
             break;
         }
-        case ADD:
+        case ADD:   /* add */
+        {
+
+            break;
+        }
+        case LD:    /* load */
         {
             break;
         }
-        case LD:
+        case ST:    /* store */
         {
             break;
         }
-        case ST:
+        case JSR:   /* jump subroutine */
         {
             break;
         }
-        case JSR:
+        case AND:   /* bitwise and */
         {
             break;
         }
-        case AND:
+        case LDR:   /* load register */
         {
             break;
         }
-        case LDR:
+        case STR:   /* store register */
         {
             break;
         }
-        case STR:
+        case NOT:   /* bitwsie not */
         {
             break;
         }
-        case NOT:
+        case LDI:   /* load indirect */
         {
             break;
         }
-        case LDI:
+        case STI:   /* store indirect */
         {
             break;
         }
-        case STI:
+        case JMP:   /* jump */
         {
             break;
         }
-        case JMP:
+        case LEA:   /* load effective addr */
         {
             break;
         }
-        case LEA:
+        case TRAP: 
         {
             break;
         }
-        case TRAP:
-        {
-            break;
-        }
-        case RES:
-        case RTI:
+        case RES: /* unsupported */
+        case RTI: /* unsupported */
         default:
         {
             /* ERROR */
