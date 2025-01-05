@@ -1,12 +1,16 @@
 /**
-* LC-3
-* WORD SIZE = 16 bits
+* Little Ccomputer 3
+* see README  for original resources
+* see INTRO   for an introductory note
+* see LICENSE for 0BSD
 */
 
+/* Headers */
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Macros */
 #if defined(__GNUC__) || defined(__clang__)
 #define Trap() __buildtin_trap()
 #else
@@ -25,8 +29,25 @@
 #define NotImplemented      Assert(!"Not Implemented!")
 #define ArrayCount(Array)   (sizeof(Array) / sizeof((Array)[0]))
 
+
+/**
+* INTRO
+*
+* Heavy use of comments, attempt at full clarification of what's going on.
+* Long comments are not necessarily linked to immediate code before or after
+* them, nevertheless it reads fine.
+*
+* The code layout is not very efficient but it exposes the underlying ideas
+* very clearly, since the design is fully flat. You can read the code (not
+* the headers) from top to bottom and understand everything.
+*
+* Fidelity with original resources is not guaranteed.
+*
+*/
+
+
 /** 
-* MEM ADDR RANGE
+* Mem addr range
 * 0000..FFFF
 *
 * -- MEMORY MAP --
@@ -48,11 +69,11 @@
 * 
 */
 
-enum { MAX_MEM = (1 << 16) }; /* 2**16 -> 65536 */
+enum { MAX_MEM = (1 << 16) }; /* 2**16 -> 65536 mem locations */
 uint16_t mem[MAX_MEM]; 
 
 /**
-* REGISTERS (16-bit width)
+* Registers (16-bit width)
 * 8 General Purpose,   000..111
 * 1 Program counter == Instruction Pointer
 * 1 Condition codes == Processor Flags
@@ -69,12 +90,12 @@ enum {
     R6,     /* general purpose */
     R7,     /* general purpose */
     IP,     /* instruction pointer */ /* program counter */
-    FLAGS,  /* processor flags */
+    FLAGS,  /* processor flags */     /* condition codes */
     RCOUNT,
 }; uint16_t reg[RCOUNT];
 
 /**
-* PROCESSOR FLAGS 
+* Processor flags (Condition codes)
 * LD, LDI, LDR, LEA and ADD, AND and NOT
 * load a result into one of the 8 general
 * purpose registers. Flags are set based
@@ -89,7 +110,7 @@ enum {
 };
 
 /**
-* INSTRUCTIONS (16 bits)
+* Instructions (16 bits)
 * Bits 15:12 -> opcode
 * Bits 11:0  -> extra info
 */
@@ -164,6 +185,8 @@ readimage(const char *filepath)
 *                   2. Add 1  = 0000 0000 0000 0100 = 4 in decimal
 *             Therefore,
 *             1100 and 1111 1111 1111 1100 are -4 decimal
+*
+*             Recommended: https://www.youtube.com/watch?v=4qH4unVtJkE
 */
 
 static inline uint16_t
@@ -213,7 +236,7 @@ updateflags(const uint16_t r)
 {
     if      (reg[r] == 0)   reg[FLAGS] = FZRO;
     else if (reg[r] >> 15)  reg[FLAGS] = FNEG;
-    else                    reg[r] = FPOS;
+    else                    reg[FLAGS] = FPOS;
 }
 
 int
@@ -236,10 +259,10 @@ main(int argc, const char **argv)
         }
     }
 
-    /* set zero flag. one flag must always be set */
+    /* Initial state: ZERO flag */
     reg[FLAGS] = FZRO;
     
-    /* set IP */
+    /* Set Instruction Pointer (PC) */
     enum { IPSTART = 0x3000 }; /* code origin */
     reg[IP] = IPSTART;
 
@@ -248,8 +271,8 @@ main(int argc, const char **argv)
     {
         /* FETCH */
         uint16_t instr = memread(reg[IP]++); /* read 16-bit instr */
-        uint16_t op    = instr >> 12;        /* bits 15:12 (4) set opcode */
-        switch (op)
+        uint16_t op    = instr >> 12;        /* bits[15:12] set 4-bit opcode */
+        switch (op) /* DECODE */
         {
         case BR:    /* branch */
         {
@@ -257,7 +280,27 @@ main(int argc, const char **argv)
         }
         case ADD:   /* add */
         {
+            uint16_t R0, R1, R2, imm5, immediate;
 
+            /* Destination Register, bits[11:9] */
+            R0 = (instr >> 9) & 0x7; /* 0x7 = 0111; test bottom 3 bits */
+            /* Source Register 1, bits[8:6] */
+            R1 = (instr >> 6) & 0x7; 
+            /* if 5th bit set, immediate mode */
+            immediate = (instr >> 5) & 0x1;
+            if (immediate)
+            {
+                imm5 = instr & 0x1F;
+                signextend(imm5, 5);
+                R0 = R1 + imm5;
+            }
+            else
+            {
+                R2 = instr & 0x7;
+                R0 = R1 + R2;
+            }
+
+            updateflags(R0);
             break;
         }
         case LD:    /* load */
@@ -284,7 +327,7 @@ main(int argc, const char **argv)
         {
             break;
         }
-        case NOT:   /* bitwsie not */
+        case NOT:   /* bitwise not */
         {
             break;
         }
@@ -321,4 +364,7 @@ main(int argc, const char **argv)
     }
 
     return 0;
-}
+
+} 
+
+
