@@ -136,9 +136,9 @@ readimage(const char *filepath)
 *             two's complement representation, the sum of this two equals 2^N
 *             e.g., 2-bit, N=2
 *                   2^N = 2^2 = 4 = 100
-*                   010 -> Binary representation of '2'
-*                   011 -> Two's complement of '10'
-*                   010 + 011 = 100 = 2^N
+*                   10 -> Binary representation of '2'
+*                   11 -> Two's complement of '10'
+*                   10 + 11 = 100 = 2^N
 *                   
 *             Two's complement algorithm:
 *                   Given absolute binary representation of some number x,
@@ -152,7 +152,7 @@ readimage(const char *filepath)
 *                   i.e., 101 = -(1*2^2)+(0*2^1)+(1*2^0) = -4+0+1 = -3
 *
 *             Sign extension technique:
-*             or numerical value preservation given (new) greater width
+*             or numerical value preservation given greater (new) width
 *             check the code in signextend() first (and the comments)
 *
 *             Consider this:
@@ -167,22 +167,37 @@ readimage(const char *filepath)
 */
 
 static inline uint16_t
-signextend(uint16_t x, int bitcount)
+signextend(uint16_t n, int width)
 {
     /**
     * In order to extend a two's complement number
-    * we must preserve the sign by repeating the MSB
-    * in all the (new) extra bits, i.e., 1100 -> 1111 1111 1111 1100 
-    *
-    * we only extend the negative numbers (MSB = 1)
-    * positive number extension is given
+    * we must preserve the sign by repeating the
+    * sign bit (MSB) in all the (new) extra bits,
+    * e.g., 0x000C(=1100) -> 0xFFFC(=1111 1111 1111 1100)
     */
-    if ((x >> (bitcount - 1)) & 1) { /* check MSB == 1 */
+    if ((n >> (width - 1)) & 1) { /* check sign bit (MSB) of n */
+        /* n is negative */
 
-        x |= (0xFFFF << bitcount); /* set to 1 all extra bits */
+        /**
+        * Extend n by setting to 1 all extra bits
+        * e.g.,
+        * If n=-4=0x000C, width=4=0x0004, 0xFFFF=1111 1111 1111 1111
+        * then,
+        * 0xFFFF << 0x0004 = 0xFFF0
+        * n = 0x000C OR 0xFFF0; n = 0xFFFC = 1111 1111 1111 1100 = -4
+        */
+        n |= (0xFFFF << width);
     }
 
-    return x;
+    /**
+    * Else n is positive
+    *
+    * In theory we set to 0 all extra bits
+    * but **we are not** actually going from
+    * a 4-bit number to a 16-bit number, so
+    * we don't do anything
+    */
+    return n;
 }
 
 
