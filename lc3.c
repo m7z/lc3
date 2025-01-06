@@ -280,27 +280,30 @@ main(int argc, const char **argv)
         }
         case ADD:   /* add */
         {
-            uint16_t R0, R1, R2, imm5, immediate;
+            uint16_t DR, SR1, SR2, imm5, immediate;
 
             /* Destination Register, bits[11:9] */
-            R0 = (instr >> 9) & 0x7; /* 0x7 = 0111; test bottom 3 bits */
+            DR  = (instr >> 9) & 0x7; /* 0x7=0111;  compare bottom 3 bits */
+
             /* Source Register 1, bits[8:6] */
-            R1 = (instr >> 6) & 0x7; 
-            /* if 5th bit set, immediate mode */
-            immediate = (instr >> 5) & 0x1;
+            SR1 = (instr >> 6) & 0x7; /* 0x7=0111; compare bottom 3 bits */
+
+            /* bits[5] ? immediate mode : nonimmediate */
+            immediate = (instr >> 5) & 0x1; /* 5th bit set? */
             if (immediate)
             {
-                imm5 = instr & 0x1F;
-                signextend(imm5, 5);
-                R0 = R1 + imm5;
+                /* imm5 can only store unsigned values <= 2^5=32 */
+                imm5 = instr & 0x1F; /* 0x1F=00011111; compare bottom 5 bits */
+                signextend(imm5, 5); /* 5-bit -> 16-bit value */
+                reg[DR] = reg[SR1] + imm5;
             }
             else
             {
-                R2 = instr & 0x7;
-                R0 = R1 + R2;
+                SR2 = instr & 0x7; /* 0x7=0111; compare bottom 3 bits */
+                reg[DR] = reg[SR1] + reg[SR2];
             }
 
-            updateflags(R0);
+            updateflags(DR); /* ADD instr sets Processor FLAGS */
             break;
         }
         case LD:    /* load */
