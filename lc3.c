@@ -345,6 +345,26 @@ main(int argc, const char **argv)
         }
         case BR:    /* branch */
         {
+            uint16_t flagstate, N, Z, P, PCoffset9;
+
+            /* Offset, bits[8:0]*/
+            PCoffset9 = signextend(instr & 0x1FF, 9);
+            /* Procesor Flags, bits[11:9] */
+            flagstate = (instr >> 9) & 0x7; 
+            if (flagstate & reg[FLAGS])
+            {
+
+                /**
+                * Before the following assignment, the Instruction Pointer's
+                * current value is the BR instruction we are decoding.
+                *
+                * The next instruction to be decoded (in the next fetch cycle)
+                * would be the one we are storing in this assignment.
+                * 
+                */
+                reg[IP] += PCoffset9;
+            }
+
             break;
         }
         case LD:    /* load */
