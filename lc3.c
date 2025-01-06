@@ -117,15 +117,8 @@ enum {
 * NOTE(M): Extremely important to keep this order! As you can see from the
 * comments, each instruction matches it's enum position, counting from 0..15
 *
-* If you misplace any of them the switch(op) statement inside main() that
-* jumps between the implementation of each instruction once they are read
-* from the Instruction Pointer.
-*
-* In the actual switch(op) statement they are misplaced for convenience and
-* eventual refactoring, many instructions share almost all execution, see
-* case(ADD) and case(AND)
-*
-*                                                       ~6Jan25
+* If you swap any one of them, you break the DECODE step. 
+* see switch(op) in main()
 */
 enum {      /* Instruction name                         Opcode              */
     BR = 0, /* Conditional Branch                       0000                */
@@ -343,6 +336,20 @@ main(int argc, const char **argv)
             updateflags(DR); /* AND instr sets Processor FLAGS */
             break;
         }
+        case NOT:   /* bitwise not */
+        {
+            uint16_t DR, SR;
+
+            /* Destinarion Register, bits[11:9] */
+            DR = (instr >> 9) & 0x7;
+            /* Source Register, bits[8:6] */
+            SR = (instr >> 6) & 0x7;
+
+            /* Complement, invert all bits */
+            reg[DR] = ~reg[SR];
+            updateflags(reg[DR]); /* NOT instr sets Processor FLAGS */
+            break;
+        }
         case BR:    /* branch */
         {
             uint16_t flagstate, N, Z, P, PCoffset9;
@@ -384,10 +391,6 @@ main(int argc, const char **argv)
             break;
         }
         case STR:   /* store register */
-        {
-            break;
-        }
-        case NOT:   /* bitwise not */
         {
             break;
         }
