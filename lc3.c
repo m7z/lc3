@@ -287,10 +287,6 @@ main(int argc, const char **argv)
         uint16_t op    = instr >> 12;        /* bits[15:12] set 4-bit opcode */
         switch (op) /* DECODE */
         {
-        case BR:    /* branch */
-        {
-            break;
-        }
         case ADD:   /* add */
         {
             uint16_t DR, SR1, SR2, imm5, immediate;
@@ -319,6 +315,38 @@ main(int argc, const char **argv)
             updateflags(DR); /* ADD instr sets Processor FLAGS */
             break;
         }
+        case AND:   /* bitwise and */
+        {
+            uint16_t DR, SR1, SR2, imm5, immediate;
+
+            /* Destination Register, bits[11:9] */
+            DR  = (instr >> 9) & 0x7; /* 0x7=0111;  compare bottom 3 bits */
+
+            /* Source Register 1, bits[8:6] */
+            SR1 = (instr >> 6) & 0x7; /* 0x7=0111; compare bottom 3 bits */
+
+            /* bits[5] ? immediate mode : nonimmediate */
+            immediate = (instr >> 5) & 0x1; /* 5th bit set? */
+            if (immediate)
+            {
+                /* imm5 can only store unsigned values <= 2^5=32 */
+                imm5 = instr & 0x1F; /* 0x1F=00011111; compare bottom 5 bits */
+                signextend(imm5, 5); /* 5-bit -> 16-bit value */
+                reg[DR] = reg[SR1] & imm5;
+            }
+            else /* nonimmeditate */
+            {
+                SR2 = instr & 0x7; /* 0x7=0111; compare bottom 3 bits */
+                reg[DR] = reg[SR1] & reg[SR2];
+            }
+
+            updateflags(DR); /* AND instr sets Processor FLAGS */
+            break;
+        }
+        case BR:    /* branch */
+        {
+            break;
+        }
         case LD:    /* load */
         {
             break;
@@ -328,10 +356,6 @@ main(int argc, const char **argv)
             break;
         }
         case JSR:   /* jump subroutine */
-        {
-            break;
-        }
-        case AND:   /* bitwise and */
         {
             break;
         }
