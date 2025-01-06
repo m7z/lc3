@@ -113,24 +113,37 @@ enum {
 * Instructions (16 bits)
 * Bits 15:12 -> opcode
 * Bits 11:0  -> extra info
+*
+* NOTE(M): Extremely important to keep this order! As you can see from the
+* comments, each instruction matches it's enum position, counting from 0..15
+*
+* If you misplace any of them the switch(op) statement inside main() that
+* jumps between the implementation of each instruction once they are read
+* from the Instruction Pointer.
+*
+* In the actual switch(op) statement they are misplaced for convenience and
+* eventual refactoring, many instructions share almost all execution, see
+* case(ADD) and case(AND)
+*
+*                                                       ~6Jan25
 */
-enum {
-    BR = 0, /* branch */
-    ADD,    /* add */
-    LD,     /* load */
-    ST,     /* store */
-    JSR,    /* jump subroutine */
-    AND,    /* bitwise and */
-    LDR,    /* load register */
-    STR,    /* store register */
-    RTI,    /* unused (return from interrupt?) */
-    NOT,    /* bitwise not */
-    LDI,    /* load indirect */
-    STI,    /* store indirect */
-    JMP,    /* jump */
-    RES,    /* unused. reserved */
-    LEA,    /* load effective addr */
-    TRAP    
+enum {      /* Instruction name                         Opcode              */
+    BR = 0, /* Conditional Branch                       0000                */
+    ADD,    /* Addition                                 0001                */
+    LD,     /* Load                                     0010                */
+    ST,     /* Store                                    0011                */
+    JSR,    /* Jump to Subroutine                       0100                */
+    AND,    /* Bit-wise Logical AND                     0101                */
+    LDR,    /* Load Register (Base+Offset)              0110                */
+    STR,    /* Store Register (Base+Offset)             0111                */
+    RTI,    /* Return from Interrupt                    1000                */
+    NOT,    /* Bit-Wise Logical NOT                     1001                */
+    LDI,    /* Load Indirect                            1010                */
+    STI,    /* Store Indirect                           1011                */
+    JMP,    /* Jump                                     1100                */
+    RES,    /* Reserved                                 1101                */
+    LEA,    /* Load Effective Addr                      1110                */
+    TRAP    /* System Call                              1111                */
 };
 
 static uint16_t
