@@ -139,10 +139,14 @@ enum {      /* Instruction name                         Opcode              */
     TRAP    /* System Call                              1111                */
 };
 
-static uint16_t
+static int
 readimage(const char *filepath)
 {
+    FILE *file = fopen(filepath, "rb");
+    if (!file) return -1;
+    /*fread(void *buffer, size_t size, size_t count, FILE *stream);*/
     NotImplemented;
+    fclose(file);
     return 0;
 }
 
@@ -239,7 +243,6 @@ signextend(uint16_t n, int width)
     return n;
 }
 
-
 static inline uint16_t
 swap16(uint16_t x)
 {
@@ -268,7 +271,7 @@ main(int argc, const char **argv)
 
     for (j = 1; j < argc; j++)
     {
-        if (!readimage(argv[j]))
+        if (readimage(argv[j]) < 0)
         {
             printf("failed to load image: %s\n", argv[j]);
             exit(1);
@@ -290,7 +293,7 @@ main(int argc, const char **argv)
         uint16_t op    = instr >> 12;        /* bits[15:12] set 4-bit opcode */
         switch (op) /* DECODE */
         {
-        case ADD:   /* add */
+        case ADD:
         {
             uint16_t DR, SR1, SR2, imm5, immediate;
 
@@ -315,10 +318,10 @@ main(int argc, const char **argv)
                 reg[DR] = reg[SR1] + reg[SR2];
             }
 
-            updateflags(DR); /* ADD instr sets Processor FLAGS */
+            updateflags(DR); /* set Processor FLAGS */
             break;
         }
-        case AND:   /* bitwise and */
+        case AND:
         {
             uint16_t DR, SR1, SR2, imm5, immediate;
 
@@ -343,10 +346,10 @@ main(int argc, const char **argv)
                 reg[DR] = reg[SR1] & reg[SR2];
             }
 
-            updateflags(DR); /* AND instr sets Processor FLAGS */
+            updateflags(DR); /* set Processor FLAGS */
             break;
         }
-        case NOT:   /* bitwise not */
+        case NOT:
         {
             uint16_t DR, SR;
 
@@ -354,23 +357,20 @@ main(int argc, const char **argv)
             DR = (instr >> 9) & 0x7;
             /* Source Register, bits[8:6] */
             SR = (instr >> 6) & 0x7;
-
             /* Complement, invert all bits */
             reg[DR] = ~reg[SR];
-            updateflags(reg[DR]); /* NOT instr sets Processor FLAGS */
+            updateflags(reg[DR]); /* set Processor FLAGS */
             break;
         }
-        case BR:    /* branch */
+        case BR:
         {
-            uint16_t flagstate, N, Z, P, PCoffset9;
-
+            uint16_t flagstate, PCoffset9;
             /* Offset, bits[8:0]*/
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Procesor Flags, bits[11:9] */
             flagstate = (instr >> 9) & 0x7; 
             if (flagstate & reg[FLAGS])
             {
-
                 /**
                 * Before the following assignment, the Instruction Pointer's
                 * current value is the BR instruction we are decoding.
