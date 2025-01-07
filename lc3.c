@@ -385,14 +385,39 @@ main(int argc, const char **argv)
         }
         case LD:
         {
+            /**
+            * NOTE(M): Indirect addressing vs. PC-relative addressing
+            * LD is limited to a 9-bit offset relative to the Program Counter,
+            * with an addressable range of [PC-256, PC+255]. Thus, LD cannot
+            * directly load "far away" values in memory.
+            * LDI, however, dereferences an intermediate memory address within
+            * this range, which can store a 16-bit pointer to any location in memory.
+            * By dereferencing twice, LDI can access any value stored anywhere.
+            *
+            * Caveat: The address of the "far away" value must be stored in memory
+            * within the PC-relative range.
+            */
+
             uint16_t DR, PCoffset9;
-            
             /* Destination Register, bits[11:9] */
             DR = (instr >> 9) & 0x7;
             /* Offset from PC, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
-            /* Load value read into register */
+            /* Load value from PC+offset addr */
             reg[DR] = memread(reg[IP] + PCoffset9);
+            updateflags(reg[DR]); /* set Processor FLAGS */
+            break;
+        }
+        case LDI:
+        {
+            /* see NOTE(M): Indirect addressing vs. PC-relative addressing */
+            uint16_t DR, PCoffset9;
+            /* Destination Register, bits [11:9] */
+            DR = (instr >> 9) & 0x7;
+            /* Offset from PC, bits[8:0] */
+            PCoffset9 = signextend(instr & 0x1FF, 9);
+            /* Load addr (instead of value like in LD) of PC+offset */
+            reg[DR] = memread(memread(reg[IP] + PCoffset9));
             updateflags(reg[DR]); /* set Processor FLAGS */
             break;
         }
@@ -417,10 +442,6 @@ main(int argc, const char **argv)
             break;
         }
         case STR:
-        {
-            break;
-        }
-        case LDI:   /* load indirect */
         {
             break;
         }
