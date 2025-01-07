@@ -12,7 +12,7 @@
 
 /* Macros */
 #if defined(__GNUC__) || defined(__clang__)
-#define Trap() __buildtin_trap()
+#define Trap() __builtin_trap()
 #else
 #error Unknown trap intrinsic for this compiler.
 #endif
@@ -140,13 +140,23 @@ enum {      /* Instruction name                         Opcode              */
 };
 
 static uint16_t
-memread(uint16_t r)
+readimage(const char *filepath)
 {
+    NotImplemented;
+    return 0;
 }
 
 static uint16_t
-readimage(const char *filepath)
+memread(uint16_t addr)
 {
+    NotImplemented;
+    return 0;
+}
+
+static inline void
+memwrite(uint16_t addr, uint16_t value)
+{
+    mem[addr] = value;
 }
 
 /**
