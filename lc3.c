@@ -381,26 +381,42 @@ main(int argc, const char **argv)
                 */
                 reg[IP] += PCoffset9;
             }
-
             break;
         }
-        case LD:    /* load */
+        case LD:
+        {
+            uint16_t DR, PCoffset9;
+            
+            /* Destination Register, bits[11:9] */
+            DR = (instr >> 9) & 0x7;
+            /* Offset from PC, bits[8:0] */
+            PCoffset9 = signextend(instr & 0x1FF, 9);
+            /* Load value read into register */
+            reg[DR] = memread(reg[IP] + PCoffset9);
+            updateflags(reg[DR]); /* set Processor FLAGS */
+            break;
+        }
+        case ST:
+        {
+            uint16_t SR, PCoffset9;
+            
+            /* Source Register, bits[11:9] */
+            SR = (instr >> 9) & 0x7;
+            /* Offset from PC, bits[8:0] */
+            PCoffset9 = signextend(instr & 0x1FF, 9);
+            /* Write SR content into PC+Offset addr */
+            memwrite(reg[IP] + PCoffset9, reg[SR]);
+            break;
+        }
+        case JSR:
         {
             break;
         }
-        case ST:    /* store */
+        case LDR:
         {
             break;
         }
-        case JSR:   /* jump subroutine */
-        {
-            break;
-        }
-        case LDR:   /* load register */
-        {
-            break;
-        }
-        case STR:   /* store register */
+        case STR:
         {
             break;
         }
