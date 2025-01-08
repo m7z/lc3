@@ -423,6 +423,16 @@ main(int argc, const char **argv)
         }
         case LDR:
         {
+            /**
+            * Register-relative addresing (see LDI for a related idea) 
+            * Abstracts PC-relative addressing; load any General
+            * Purpose register with an address and use that as a base for the
+            * offset.
+            * range -> [BaseR-32, BaseR+31]
+            * 
+            * Useful to traverse arrays or any data structure (stack, etc.)
+            * where placing elements away from a base is common.
+            */
             uint16_t DR, BaseR, offset6;
             /* Destination Register, bits[11:9] */
             DR = (instr >> 9) & 0x7;
@@ -437,6 +447,16 @@ main(int argc, const char **argv)
         }
         case LEA:
         {
+            /* Load address of a LABEL */
+            uint16_t DR, PCoffset9;
+
+            /* Destination Register, bits[11:9] */
+            DR = (instr >> 9) & 0x7; 
+            /* Offset from PC, bits[8:0] */
+            PCoffset9 = signextend(instr & 0x1FF, 9);
+            /* Load address instead of content (no memread) */
+            reg[DR] = reg[IP] + PCoffset9;
+            updatefalgs(reg[DR]); /* set Processor FLAGS */
             break;
         }
         case ST:
