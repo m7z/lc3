@@ -403,7 +403,7 @@ main(int argc, const char **argv)
         case LDR:
         {
             /**
-            * Register-relative addresing (see LDI for a related idea) 
+            * NOTE(M): Register-relative addresing (see LDI for a related idea) 
             * Abstracts PC-relative addressing; load any General
             * Purpose register with an address and use that as a base for the
             * offset.
@@ -458,12 +458,22 @@ main(int argc, const char **argv)
             SR = (instr >> 9) & 0x7;
             /* Offset, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
-            /* Store address of contents in SR in PC+Offset */
+            /* Store address of SR's contents in PC+Offset */
             memwrite(memread(reg[PC] + PCoffset9), reg[SR]);
             break;
         }
         case STR:
         {
+            /* see NOTE(M): Register-relative addresing */
+            uint16_t SR, BaseR, offset6;
+            /* Source Register, bits[11:9] */
+            SR = (instr >> 9) & 0x7;
+            /* Base Register, bits[8:6] */
+            BaseR = (instr >> 6) & 0x7;
+            /* Offset, bits[5:0] */
+            offset6 = signextend(instr & 0x3F, 6);
+            /* Store SR's contents in BaseR+offset */
+            memwrite(reg[BaseR] + offset6, reg[SR]);
             break;
         }
         case BR:
