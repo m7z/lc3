@@ -73,11 +73,18 @@ enum { MAX_MEM = (1 << 16) }; /* 2**16 -> 65536 mem locations */
 uint16_t mem[MAX_MEM]; 
 
 /**
-* Registers (16-bit width)
-* 8 General Purpose,   000..111
-* 1 Program counter
-* 1 Condition codes (Processor Flags)
-* ..
+* Registers 
+*
+* NOTE(M): General Purpose Register selection in instruction implementation 
+* All registers in LC-3 (DR, SRx, BaseR...) are 3-bit wide (2^3=0..7)
+* During decoding, we read the 3-bit value which selects the corresponding
+* register. 
+*
+* e.g., DR = (instr >> 9) & 0x7, reads bits[11:9] from a 16-bit instruction.
+* Later on in the computation we select the correct register, reg[DR], which
+* could be 1 of 8, R0..R7 
+* 
+* see any case in switch(op) inside main()
 */
 
 enum {
