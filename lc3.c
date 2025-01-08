@@ -75,8 +75,8 @@ uint16_t mem[MAX_MEM];
 /**
 * Registers (16-bit width)
 * 8 General Purpose,   000..111
-* 1 Program counter == Instruction Pointer
-* 1 Condition codes == Processor Flags
+* 1 Program counter
+* 1 Condition codes (Processor Flags)
 * ..
 */
 
@@ -89,13 +89,13 @@ enum {
     R5,     /* general purpose */
     R6,     /* general purpose */
     R7,     /* general purpose */
-    IP,     /* instruction pointer */ /* program counter */
-    FLAGS,  /* processor flags */     /* condition codes */
+    PC,     /* program counter */
+    FLAGS,  /* processor flags */
     RCOUNT,
 }; uint16_t reg[RCOUNT];
 
 /**
-* Processor flags (Condition codes)
+* Condition codes
 * LD, LDI, LDR, LEA and ADD, AND and NOT
 * load a result into one of the 8 general
 * purpose registers. Flags are set based
@@ -281,15 +281,15 @@ main(int argc, const char **argv)
     /* Initial state: ZERO flag */
     reg[FLAGS] = FZRO;
     
-    /* Set Instruction Pointer (PC) */
-    enum { IPSTART = 0x3000 }; /* code origin */
-    reg[IP] = IPSTART;
+    /* Set Program Counter */
+    enum { PCSTART = 0x3000 }; /* code origin */
+    reg[PC] = PCSTART;
 
     alive = 1; /* set to 0 by HALT (Trap) */
     while (alive)
     {
         /* FETCH */
-        uint16_t instr = memread(reg[IP]++); /* read 16-bit instr */
+        uint16_t instr = memread(reg[PC]++); /* read 16-bit instr */
         uint16_t op    = instr >> 12;        /* bits[15:12] set 4-bit opcode */
         switch (op) /* DECODE */
         {
@@ -372,14 +372,14 @@ main(int argc, const char **argv)
             if (flagstate & reg[FLAGS])
             {
                 /**
-                * Before the following assignment, the Instruction Pointer's
+                * Before the following assignment, the Program Counter's 
                 * current value is the BR instruction we are decoding.
                 *
                 * The next instruction to be decoded (in the next fetch cycle)
                 * would be the one we are storing in this assignment.
                 * 
                 */
-                reg[IP] += PCoffset9;
+                reg[PC] += PCoffset9;
             }
             break;
         }
@@ -404,7 +404,7 @@ main(int argc, const char **argv)
             /* Offset from PC, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Load value from PC+offset addr */
-            reg[DR] = memread(reg[IP] + PCoffset9);
+            reg[DR] = memread(reg[PC] + PCoffset9);
             updateflags(reg[DR]); /* set Processor FLAGS */
             break;
         }
@@ -417,7 +417,7 @@ main(int argc, const char **argv)
             /* Offset from PC, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Load addr (instead of value like in LD) of PC+offset */
-            reg[DR] = memread(memread(reg[IP] + PCoffset9));
+            reg[DR] = memread(memread(reg[PC] + PCoffset9));
             updateflags(reg[DR]); /* set Processor FLAGS */
             break;
         }
@@ -455,8 +455,8 @@ main(int argc, const char **argv)
             /* Offset from PC, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Load address instead of content (no memread) */
-            reg[DR] = reg[IP] + PCoffset9;
-            updatefalgs(reg[DR]); /* set Processor FLAGS */
+            reg[DR] = reg[PC] + PCoffset9;
+            updateflags(DR); /* set Processor FLAGS */
             break;
         }
         case ST:
@@ -468,7 +468,7 @@ main(int argc, const char **argv)
             /* Offset from PC, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Write SR content into PC+Offset addr */
-            memwrite(reg[IP] + PCoffset9, reg[SR]);
+            memwrite(reg[PC] + PCoffset9, reg[SR]);
             break;
         }
         case STI:
