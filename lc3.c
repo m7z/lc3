@@ -421,6 +421,24 @@ main(int argc, const char **argv)
             updateflags(reg[DR]); /* set Processor FLAGS */
             break;
         }
+        case LDR:
+        {
+            uint16_t DR, BaseR, offset6;
+            /* Destination Register, bits[11:9] */
+            DR = (instr >> 9) & 0x7;
+            /* Base Register, bits[8:6] */
+            BaseR = (instr >> 6) & 0x7;
+            /* Offset from BaseR, bits[5:0] */
+            offset6 = signextend(instr & 0x3F, 6);
+            /* Load contents of Base Register+Offset */
+            reg[DR] = memread(reg[BaseR] + offset6);
+            updateflags(reg[DR]); /* set Processsor FLAGS */
+            break;
+        }
+        case LEA:
+        {
+            break;
+        }
         case ST:
         {
             uint16_t SR, PCoffset9;
@@ -433,11 +451,7 @@ main(int argc, const char **argv)
             memwrite(reg[IP] + PCoffset9, reg[SR]);
             break;
         }
-        case JSR:
-        {
-            break;
-        }
-        case LDR:
+        case STI:
         {
             break;
         }
@@ -445,15 +459,11 @@ main(int argc, const char **argv)
         {
             break;
         }
-        case STI:   /* store indirect */
+        case JMP:
         {
             break;
         }
-        case JMP:   /* jump */
-        {
-            break;
-        }
-        case LEA:   /* load effective addr */
+        case JSR:
         {
             break;
         }
