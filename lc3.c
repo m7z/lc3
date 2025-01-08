@@ -362,27 +362,6 @@ main(int argc, const char **argv)
             updateflags(reg[DR]); /* set Processor FLAGS */
             break;
         }
-        case BR:
-        {
-            uint16_t flagstate, PCoffset9;
-            /* Offset, bits[8:0]*/
-            PCoffset9 = signextend(instr & 0x1FF, 9);
-            /* Procesor Flags, bits[11:9] */
-            flagstate = (instr >> 9) & 0x7; 
-            if (flagstate & reg[FLAGS])
-            {
-                /**
-                * Before the following assignment, the Program Counter's 
-                * current value is the BR instruction we are decoding.
-                *
-                * The next instruction to be decoded (in the next fetch cycle)
-                * would be the one we are storing in this assignment.
-                * 
-                */
-                reg[PC] += PCoffset9;
-            }
-            break;
-        }
         case LD:
         {
             /**
@@ -401,7 +380,7 @@ main(int argc, const char **argv)
             uint16_t DR, PCoffset9;
             /* Destination Register, bits[11:9] */
             DR = (instr >> 9) & 0x7;
-            /* Offset from PC, bits[8:0] */
+            /* Offset, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Load value from PC+offset addr */
             reg[DR] = memread(reg[PC] + PCoffset9);
@@ -414,7 +393,7 @@ main(int argc, const char **argv)
             uint16_t DR, PCoffset9;
             /* Destination Register, bits [11:9] */
             DR = (instr >> 9) & 0x7;
-            /* Offset from PC, bits[8:0] */
+            /* Offset, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Load addr (instead of value like in LD) of PC+offset */
             reg[DR] = memread(memread(reg[PC] + PCoffset9));
@@ -452,7 +431,7 @@ main(int argc, const char **argv)
 
             /* Destination Register, bits[11:9] */
             DR = (instr >> 9) & 0x7; 
-            /* Offset from PC, bits[8:0] */
+            /* Offset, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Load address instead of content (no memread) */
             reg[DR] = reg[PC] + PCoffset9;
@@ -465,18 +444,47 @@ main(int argc, const char **argv)
             
             /* Source Register, bits[11:9] */
             SR = (instr >> 9) & 0x7;
-            /* Offset from PC, bits[8:0] */
+            /* Offset, bits[8:0] */
             PCoffset9 = signextend(instr & 0x1FF, 9);
-            /* Write SR content into PC+Offset addr */
+            /* Write SR content into Offset addr */
             memwrite(reg[PC] + PCoffset9, reg[SR]);
             break;
         }
         case STI:
         {
+            /* see NOTE(M): Indirect addressing vs. PC-relative addressing */
+            uint16_t SR, PCoffset9;
+            /* Source Register, bits[11:9] */
+            SR = (instr >> 9) & 0x7;
+            /* Offset, bits[8:0] */
+            PCoffset9 = signextend(instr & 0x1FF, 9);
+            /* Store address of contents in SR in PC+Offset */
+            memwrite(memread(reg[PC] + PCoffset9), reg[SR]);
             break;
         }
         case STR:
         {
+            break;
+        }
+        case BR:
+        {
+            uint16_t flagstate, PCoffset9;
+            /* Offset, bits[8:0]*/
+            PCoffset9 = signextend(instr & 0x1FF, 9);
+            /* Procesor Flags, bits[11:9] */
+            flagstate = (instr >> 9) & 0x7; 
+            if (flagstate & reg[FLAGS])
+            {
+                /**
+                * Before the following assignment, the Program Counter's 
+                * current value is the BR instruction we are decoding.
+                *
+                * The next instruction to be decoded (in the next fetch cycle)
+                * would be the one we are storing in this assignment.
+                * 
+                */
+                reg[PC] += PCoffset9;
+            }
             break;
         }
         case JMP:
