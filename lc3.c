@@ -366,7 +366,7 @@ main(int argc, const char **argv)
             SR = (instr >> 6) & 0x7;
             /* Complement, invert all bits */
             reg[DR] = ~reg[SR];
-            updateflags(reg[DR]); /* set Processor FLAGS */
+            updateflags(DR); /* set Processor FLAGS */
             break;
         }
         case LD:
@@ -392,7 +392,7 @@ main(int argc, const char **argv)
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Load value from PC+offset addr */
             reg[DR] = memread(reg[PC] + PCoffset9);
-            updateflags(reg[DR]); /* set Processor FLAGS */
+            updateflags(DR); /* set Processor FLAGS */
             break;
         }
         case LDI:
@@ -405,7 +405,7 @@ main(int argc, const char **argv)
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Load addr (instead of value like in LD) of PC+offset */
             reg[DR] = memread(memread(reg[PC] + PCoffset9));
-            updateflags(reg[DR]); /* set Processor FLAGS */
+            updateflags(DR); /* set Processor FLAGS */
             break;
         }
         case LDR:
@@ -429,7 +429,7 @@ main(int argc, const char **argv)
             offset6 = signextend(instr & 0x3F, 6);
             /* Load contents of Base Register+Offset */
             reg[DR] = memread(reg[BaseR] + offset6);
-            updateflags(reg[DR]); /* set Processsor FLAGS */
+            updateflags(DR); /* set Processsor FLAGS */
             break;
         }
         case LEA:
