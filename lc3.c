@@ -504,8 +504,17 @@ main(int argc, const char **argv)
             }
             break;
         }
-        case JMP:
+        case JMP: /* case RET: */
         {
+            /**
+            * Unconditional jump to location specified by BaseR 
+            * Also handles RET instruction which is a special type of JUMP,
+            * RET is "run" when BaseR == 7 (111), reg[BaseR] = reg[R7]
+            */
+            uint16_t BaseR;
+            /* Base Register, bits[8:6] */
+            BaseR = (instr >> 6) & 0x7;
+            reg[PC] = reg[BaseR];
             break;
         }
         case JSR:
