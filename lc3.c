@@ -220,33 +220,33 @@ static inline uint16_t
 signextend(uint16_t n, int width)
 {
     /**
-    * In order to extend a two's complement number
-    * we must preserve the sign by repeating the
-    * sign bit (MSB) in all the (new) extra bits,
-    * e.g., 0x000C(=1100) -> 0xFFFC(=1111 1111 1111 1100)
-    */
+     * In order to extend a two's complement number
+     * we must preserve the sign by repeating the
+     * sign bit (MSB) in all the (new) extra bits,
+     * e.g., 0x000C(=1100) -> 0xFFFC(=1111 1111 1111 1100)
+     */
     if ((n >> (width - 1)) & 1) { /* check sign bit (MSB) of n */
         /* n is negative */
 
         /**
-        * Extend n by setting to 1 all extra bits
-        * e.g.,
-        * If n=-4=0x000C, width=4=0x0004, 0xFFFF=1111 1111 1111 1111
-        * then,
-        * 0xFFFF << 0x0004 = 0xFFF0
-        * n = 0x000C OR 0xFFF0; n = 0xFFFC = 1111 1111 1111 1100 = -4
-        */
+         * Extend n by setting to 1 all extra bits
+         * e.g.,
+         * If n=-4=0x000C, width=4=0x0004, 0xFFFF=1111 1111 1111 1111
+         * then,
+         * 0xFFFF << 0x0004 = 0xFFF0
+         * n = 0x000C OR 0xFFF0; n = 0xFFFC = 1111 1111 1111 1100 = -4
+         */
         n |= (0xFFFF << width);
     }
 
     /**
-    * Else n is positive
-    *
-    * In theory we set to 0 all extra bits
-    * but **we are not** actually going from
-    * a 4-bit number to a 16-bit number, so
-    * we don't do anything
-    */
+     * Else n is positive
+     *
+     * In theory we set to 0 all extra bits
+     * but **we are not** actually going from
+     * a 4-bit number to a 16-bit number, so
+     * we don't do anything
+     */
     return n;
 }
 
@@ -288,8 +288,8 @@ main(int argc, const char **argv)
     /* Initial state: ZERO flag */
     reg[FLAGS] = FZRO;
     
-    /* Set Program Counter */
-    enum { PCSTART = 0x3000 }; /* code origin */
+    /* Set inital Program Counter */
+    enum { PCSTART = 0x3000 }; /* Userspace code origin (see MEMORY MAP) */
     reg[PC] = PCSTART;
 
     alive = 1; /* set to 0 by HALT (Trap) */
@@ -372,17 +372,18 @@ main(int argc, const char **argv)
         case LD:
         {
             /**
-            * NOTE(M): Indirect addressing vs. PC-relative addressing
-            * LD is limited to a 9-bit offset relative to the Program Counter,
-            * with an addressable range of [PC-256, PC+255]. Thus, LD cannot
-            * directly load "far away" values in memory.
-            * LDI, however, dereferences an intermediate memory address within
-            * this range, which can store a 16-bit pointer to any location in memory.
-            * By dereferencing twice, LDI can access any value stored anywhere.
-            *
-            * Caveat: The address of the "far away" value must be stored in memory
-            * within the PC-relative range.
-            */
+             * NOTE(M): Indirect addressing vs. PC-relative addressing
+             * LD is limited to a 9-bit offset relative to the Program Counter,
+             * with an addressable range of [PC-256, PC+255]. Thus, LD cannot
+             * directly load "far away" values in memory.
+             * LDI, however, dereferences an intermediate memory address within
+             * this range, which can store a 16-bit pointer to any location in 
+             * memory. By dereferencing twice, LDI can access any value stored 
+             * anywhere.
+             * 
+             * Caveat: The address of the "far away" value must be stored in 
+             * memory within the PC-relative range.
+             */
 
             uint16_t DR, PCoffset9;
             /* Destination Register, bits[11:9] */
@@ -410,15 +411,15 @@ main(int argc, const char **argv)
         case LDR:
         {
             /**
-            * NOTE(M): Register-relative addresing (see LDI for a related idea) 
-            * Abstracts PC-relative addressing; load any General
-            * Purpose register with an address and use that as a base for the
-            * offset.
-            * range -> [BaseR-32, BaseR+31]
-            * 
-            * Useful to traverse arrays or any data structure (stack, etc.)
-            * where placing elements away from a base is common.
-            */
+             * NOTE(M): Register-relative addresing (see LDI for related idea) 
+             * Abstracts PC-relative addressing; load any General
+             * Purpose register with an address and use that as a base for the
+             * offset.
+             * range -> [BaseR-32, BaseR+31]
+             * 
+             * Useful to traverse arrays or any data structure (stack, etc.)
+             * where placing elements away from a base is common.
+             */
             uint16_t DR, BaseR, offset6;
             /* Destination Register, bits[11:9] */
             DR = (instr >> 9) & 0x7;
@@ -493,13 +494,13 @@ main(int argc, const char **argv)
             if (flagstate & reg[FLAGS])
             {
                 /**
-                * Before the following assignment, the Program Counter's 
-                * current value is the BR instruction we are decoding.
-                *
-                * The next instruction to be decoded (in the next fetch cycle)
-                * would be the one we are storing in this assignment.
-                * 
-                */
+                 * Before the following assignment, the Program Counter's 
+                 * current value is the BR instruction we are decoding.
+                 *
+                 * The next instruction to be decoded (in the next fetch cycle)
+                 * would be the one we are storing in this assignment.
+                 * 
+                 */
                 reg[PC] += PCoffset9;
             }
             break;
@@ -539,10 +540,9 @@ main(int argc, const char **argv)
              * - Otherwise, the address is taken from the specified BaseR
              */
             uint16_t BaseR, PCoffset11;
-            reg[R7] = reg[PC]; // Save current PC into R7 for linkage
+            reg[R7] = reg[PC]; /* Save current PC into R7 for linkage */
 
-            if ((instr >> 11) & 0x1) // Addressing mode: PC-relative
-            {
+            if ((instr >> 11) & 0x1) /* Addressing mode: PC-relative */ {
                 /* Offset, bits[10:0] */
                 PCoffset11 = signextend(instr & 0x7FF, 11);
                 reg[PC] += PCoffset11;
@@ -551,12 +551,72 @@ main(int argc, const char **argv)
             {
                 /* Base Register, bits[8:6] */
                 BaseR = (instr >> 6) & 0x7;
-                reg[PC] = reg[BaseR]; // Address from BaseR
+                reg[PC] = reg[BaseR]; /* Address from BaseR */
             }
             break;
         }
         case TRAP: 
         {
+            uint16_t trapvect8;
+            /* Trap Vector Table (see MEMORY MAP) */
+            enum
+            {
+                /* Read char from keyboard */
+                __GETC  = 0x20; 
+                /* Write char to the console display */
+                __OUT   = 0x21;
+                /* Write string, one char per word */
+                __PUTS  = 0x22;
+                /* Read char from keyboard and echo onto terminal */
+                __IN    = 0x23;
+                /* Write string, one char per byte, two bytes per word */
+                __PUTSP = 0x24;
+                /* Halt execution and print msg on console */
+                __HALT  = 0x25;
+            };
+
+            /**
+             * Save current PC into R7, after Trap Routine is handled code
+             * jumps back to the **next** instruction after the Trap, unless
+             * the Trap overwrites this default behaviour.
+             */
+            reg[R7] = reg[PC];
+
+            /**
+             * Trap Vector, bits[7:0] 
+             * LC-3 ISA requires trapvect8 to be zero extended to 16 bits. 
+             * This is automatically achieved here by defining `trapvect8` as 
+             * an unsigned 16-bit integer.
+             */
+            trapvect8 = instr & 0xFF; 
+
+            switch (trapvect8)
+            {
+                case __GETC:
+                {
+                    break;
+                }
+                case __PUTS:
+                {
+                    break;
+                }
+                case __PUTSP:
+                {
+                    break;
+                }
+                case __IN:
+                {
+                    break;
+                }
+                case __OUT:
+                {
+                    break;
+                }
+                case __HALT:
+                {
+                    break;
+                }
+            }
             break;
         }
         case RES: /* unsupported */
@@ -572,7 +632,6 @@ main(int argc, const char **argv)
     }
 
     return 0;
-
 } 
 
 
