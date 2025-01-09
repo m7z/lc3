@@ -594,10 +594,14 @@ main(int argc, const char **argv)
             {
                 case __GETC:
                 {
+                    /* ASCII code copied into R0 */
+                    reg[R0] = (uint16_t)getchar();
+                    updateflags(R0);
                     break;
                 }
                 case __PUTS:
                 {
+                    
                     break;
                 }
                 case __PUTSP:
