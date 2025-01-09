@@ -271,6 +271,44 @@ updateflags(const uint16_t r)
     else                    reg[FLAGS] = FPOS;
 }
 
+static int
+readimage(const char *filepath)
+{
+    FILE *file;
+    uint16_t *p; /* Pointer to the memory location for writing file data. */
+    uint16_t addr_origin; /* start address from the file */
+    uint16_t maxread; /* maxread ensures bounds */
+    size_t read; /* Number of 16-bit words read from the file */
+
+    file = fopen(filepath, "rb");
+    if (!file) return -1; 
+
+    /* Read the origin address (2 bytes) from the file. */
+    fread(&addr_origin, sizeof(addr_origin), 1, file);
+    /* LC-3 is Big Endian, host is not */
+    addr_origin = swap16(addr_origin); 
+
+    /* Max number of words that can be read without overflowing memory */
+    maxread = MAX_MEM - addr_origin;
+
+    /* Set the pointer to the start of memory region for the image file */
+    p = mem + addr_origin;
+
+    /* Read up to maxread 16-bit words from the file into memory */
+    read = fread(p, sizeof(uint16_t), maxread, file);
+
+    /* Convert each word read to the correct byte order */
+    while (read-- > 0)
+    {
+        *p = swap16(*p); 
+        ++p; 
+    }
+
+    fclose(file); 
+    return 0; 
+}
+
+
 int
 main(int argc, const char **argv)
 {
