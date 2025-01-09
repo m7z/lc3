@@ -507,10 +507,20 @@ main(int argc, const char **argv)
         case JMP: /* case RET: */
         {
             /**
-            * Unconditional jump to location specified by BaseR 
-            * Also handles RET instruction which is a special type of JUMP,
-            * RET is "run" when BaseR == 7 (111), reg[BaseR] = reg[R7]
-            */
+             * Unconditional jump to the address specified by BaseR.
+             *
+             * The JMP instruction simply loads the Program Counter (PC)
+             * with the value in the register BaseR, allowing an unconditional
+             * branch to any memory location.
+             *
+             * The RET instruction is a specific form of JMP where BaseR is R7.
+             * In subroutine calls, the current PC is stored in R7 
+             * (linkage register) by JSR or JSRR. When a subroutine completes,
+             * RET is used to restore the PC from R7, effectively returning to
+             * the instruction immediately following the subroutine call.
+             *
+             * This makes RET an implied return mechanism for subroutine calls.
+             */
             uint16_t BaseR;
             /* Base Register, bits[8:6] */
             BaseR = (instr >> 6) & 0x7;
@@ -519,6 +529,30 @@ main(int argc, const char **argv)
         }
         case JSR:
         {
+            /**
+             * Jump to Subroutine (JSR) instruction:
+             * Saves the current PC into R7 (linkage register) to enable return
+             * to the calling location.
+             * Determines the target address of the subroutine based on the
+             * addressing mode:
+             * - If bit[11] is set, the address is computed using PC + offset11
+             * - Otherwise, the address is taken from the specified BaseR
+             */
+            uint16_t BaseR, PCoffset11;
+            reg[R7] = reg[PC]; // Save current PC into R7 for linkage
+
+            if ((instr >> 11) & 0x1) // Addressing mode: PC-relative
+            {
+                /* Offset, bits[10:0] */
+                PCoffset11 = signextend(instr & 0x7FF, 11);
+                reg[PC] += PCoffset11;
+            }
+            else
+            {
+                /* Base Register, bits[8:6] */
+                BaseR = (instr >> 6) & 0x7;
+                reg[PC] = reg[BaseR]; // Address from BaseR
+            }
             break;
         }
         case TRAP: 
