@@ -146,16 +146,22 @@ enum {      /* Instruction name                         Opcode              */
     TRAP    /* System Call                              1111                */
 };
 
-static int
-readimage(const char *filepath)
+/* Trap Vector Table (see MEMORY MAP) */
+enum
 {
-    FILE *file = fopen(filepath, "rb");
-    if (!file) return -1;
-    /*fread(void *buffer, size_t size, size_t count, FILE *stream);*/
-    NotImplemented;
-    fclose(file);
-    return 0;
-}
+    /* Read char from keyboard */
+    __GETC  = 0x20,
+    /* Write char to the console display */
+    __OUT   = 0x21,
+    /* Write string, one char per word */
+    __PUTS  = 0x22,
+    /* Read char from keyboard and echo onto terminal */
+    __IN    = 0x23,
+    /* Write string, one char per byte, two bytes per word */
+    __PUTSP = 0x24,
+    /* Halt execution and print msg on console */
+    __HALT  = 0x25
+};
 
 static uint16_t
 memread(uint16_t addr)
@@ -558,22 +564,6 @@ main(int argc, const char **argv)
         case TRAP: 
         {
             uint16_t trapvect8;
-            /* Trap Vector Table (see MEMORY MAP) */
-            enum
-            {
-                /* Read char from keyboard */
-                __GETC  = 0x20; 
-                /* Write char to the console display */
-                __OUT   = 0x21;
-                /* Write string, one char per word */
-                __PUTS  = 0x22;
-                /* Read char from keyboard and echo onto terminal */
-                __IN    = 0x23;
-                /* Write string, one char per byte, two bytes per word */
-                __PUTSP = 0x24;
-                /* Halt execution and print msg on console */
-                __HALT  = 0x25;
-            };
 
             /**
              * Save current PC into R7, after Trap Routine is handled code
