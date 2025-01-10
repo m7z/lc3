@@ -163,9 +163,26 @@ enum
     __HALT  = 0x25
 };
 
+/* Device/Memory Mapped Registers (see MEMORY MAP) */
+enum
+{
+    __KBSR = 0xFE00, /* Keyboard Status, has any key been pressed?   */
+    __KBDR = 0xFE02, /* Keyboard Data,   what key has been pressed?  */
+    __DSR  = 0xFE04, /* Display Status,  display ready to print?     */
+    __DDR  = 0xFE06, /* Display Data,    display written char        */
+    __MCR  = 0xFEEE, /* Machine Control, clock enable/disable        */
+};
+
+
 static uint16_t
 memread(uint16_t addr)
 {
+    if (addr == __KBSR)
+    {
+        if (checkkey())
+        {
+        }
+    }
     NotImplemented;
     return 0;
 }
