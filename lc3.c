@@ -198,8 +198,14 @@ void restoreinputbuffering(void)
 static uint16_t
 checkkey(void)
 {
-    NotImplemented;
-    return 0;
+    struct pollfd fds[1]; /* Single file descriptor */
+    fds[0].fd = STDIN_FILENO; /* Standard IN */
+    fds[0].events = POLLIN; /* Check for input data */
+
+    /* Poll with 0s timeout (non-blocking) */
+    int ret = poll(fds, 1, 0);
+    /* Return 1 if data IN, 0 otherwise */
+    return (ret > 0 && (fds[0].revents & POLLIN)) ? 1 : 0;
 }
 
 static uint16_t
