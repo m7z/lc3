@@ -9,10 +9,10 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-/*#include <stdint.h>*/
 #include <poll.h>
 #include <unistd.h>
 #include <termios.h>
+/*#include <stdint.h>*/
 
 /* Macros */
 #if defined(__GNUC__) || defined(__clang__)
@@ -687,6 +687,17 @@ main(int argc, const char **argv)
                 case __PUTS:
                 {
                     
+                    /* One char per memory location (16-bit) stored in 
+                     * consecutive memory locations, starting with addr
+                     * specified by R0, strings are x0000-terminated 
+                     */
+                    uint16_t *ch = mem + reg[R0]; /* start of string */
+                    while (*ch) /* 0 when *ch == 0x000 */
+                    {
+                        putc((char)*ch, stdout);
+                        ++ch;
+                    }
+                    fflush(stdout);
                     break;
                 }
                 case __PUTSP:
