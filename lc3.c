@@ -9,6 +9,10 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+/*#include <stdint.h>*/
+#include <poll.h>
+#include <unistd.h>
+#include <termios.h>
 
 /* Macros */
 #if defined(__GNUC__) || defined(__clang__)
@@ -173,6 +177,23 @@ enum
     __MCR  = 0xFEEE, /* Machine Control, clock enable/disable        */
 };
 
+struct termios original_tio;
+void disableinputbuffering(void)
+{
+    /* Save the current terminal configuration */
+    tcgetattr(STDIN_FILENO, &original_tio);
+    struct termios new_tio = original_tio;
+    /* Disable canonical mode and echo */
+    new_tio.c_lflag &= ~ICANON & ~ECHO;
+    /* Apply the new configuration immediately */
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
+}
+
+void restoreinputbuffering(void)
+{
+    /* Restore original terminal configuration */
+    tcsetattr(STDIN_FILENO, TCSANOW, &original_tio);
+}
 
 static uint16_t
 checkkey(void)
