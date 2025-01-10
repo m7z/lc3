@@ -175,16 +175,29 @@ enum
 
 
 static uint16_t
+checkkey(void)
+{
+    NotImplemented;
+    return 0;
+}
+
+static uint16_t
 memread(uint16_t addr)
 {
     if (addr == __KBSR)
     {
         if (checkkey())
         {
+            mem[__KBSR] = (1 << 15); /* bit[15], busy bit */
+            mem[__KBDR] = getchar();
+        }
+        else
+        {
+            mem[__KBSR] = 0;
         }
     }
-    NotImplemented;
-    return 0;
+
+    return mem[addr];
 }
 
 static inline void
