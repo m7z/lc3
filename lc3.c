@@ -8,9 +8,10 @@
 /* Headers */
 #include <inttypes.h>
 #include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
+#include <unistd.h> /* STDIN_FILENO */
 #include <poll.h>
-#include <unistd.h>
 #include <termios.h>
 /*#include <stdint.h>*/
 
@@ -178,21 +179,31 @@ enum
 };
 
 struct termios original_tio;
-void disableinputbuffering(void)
+void
+disableinputbuffering(void)
 {
     /* Save the current terminal configuration */
     tcgetattr(STDIN_FILENO, &original_tio);
     struct termios new_tio = original_tio;
     /* Disable canonical mode and echo */
-    new_tio.c_lflag &= ~ICANON & ~ECHO;
+    new_tio.c_lflag &= ~(ICANON | ECHO);
     /* Apply the new configuration immediately */
     tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
 }
 
-void restoreinputbuffering(void)
+void
+restoreinputbuffering(void)
 {
     /* Restore original terminal configuration */
     tcsetattr(STDIN_FILENO, TCSANOW, &original_tio);
+}
+
+void
+handleinterrupt(int signal)
+{
+    restoreinputbuffering();
+    write(STDIN_FILENO, "\n", 1); /* Signal safe */
+    exit(-2);
 }
 
 static uint16_t
@@ -371,6 +382,10 @@ main(int argc, const char **argv)
 {
     int j, alive; 
 
+    /* Disable default input buffering, we provide our own */
+    signal(SIGINT, handleinterrupt);
+    disableinputbuffering();
+
     if (argc < 2)
     {
         printf("lc3 [file-image] ...\n");
@@ -385,6 +400,7 @@ main(int argc, const char **argv)
             exit(1);
         }
     }
+
 
     /* Initial state: ZERO flag */
     reg[FLAGS] = FZRO;
@@ -764,6 +780,8 @@ main(int argc, const char **argv)
         }
     }
 
+    /* Reset terminal configuration back to default */
+    restoreinputbuffering();
     return 0;
 } 
 
