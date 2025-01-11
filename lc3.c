@@ -721,6 +721,7 @@ main(int argc, const char **argv)
                 }
                 case __IN:
                 {
+                    /* Prompt for a char, print char, store in R0 */
                     int ch;
                     printf("Enter a character: ");
                     ch = getchar();
@@ -742,6 +743,10 @@ main(int argc, const char **argv)
                 }
                 case __HALT:
                 {
+                    /* HALT execution and print to the terminal */
+                    printf("HALT");
+                    fflush(stdout);
+                    alive = 0;
                     break;
                 }
             }
