@@ -708,7 +708,7 @@ main(int argc, const char **argv)
                      * bits[15:8] are written.
                      */
                      uint16_t *ch = mem + reg[R0]; /* start of string */
-                     while (*ch)
+                     while (*ch) /* 0=false when *ch == 0x0000 */
                      {
                          /* First char, bits[7:0] */
                          putc((char)(*ch & 0xFF), stdout);
@@ -721,6 +721,16 @@ main(int argc, const char **argv)
                 }
                 case __IN:
                 {
+                    int ch;
+                    printf("Enter a character: ");
+                    ch = getchar();
+                    if (ch == EOF) reg[R0] = 0;
+                    else {
+                        putc((char)ch, stdout);
+                        reg[R0] = (uint16_t)ch;
+                    }
+                    fflush(stdout);
+                    updateflags(R0);
                     break;
                 }
                 case __OUT:
@@ -741,7 +751,7 @@ main(int argc, const char **argv)
         case RTI: /* unsupported */
         default:
         {
-            /* ERROR */
+            /* Error: Illegal opcodes */
             abort();
             break;
         }
