@@ -710,6 +710,9 @@ main(int argc, const char **argv)
                 }
                 case __OUT:
                 {
+                    /* Write a char in R0[7:0] to the terminal */
+                    putc((char)reg[R0], stdout);
+                    fflush(stdout); /* (make sure) empty data buffer */
                     break;
                 }
                 case __HALT:
