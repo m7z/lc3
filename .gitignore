@@ -1,4 +1,6 @@
 lc3-vm
+test/
+local/
 
 # Prerequisites
 *.d
