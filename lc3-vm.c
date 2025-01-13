@@ -1,21 +1,24 @@
 /**
-* Little Ccomputer 3
+* Little Computer 3 Virtual Machine
 * see README  for original resources
 * see INTRO   for an introductory note
 * see LICENSE for 0BSD
 */
 
 /* Headers */
-#include <inttypes.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <unistd.h> /* STDIN_FILENO */
 #include <poll.h>
-#include <termios.h>
-/*#include <stdint.h>*/
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/termios.h>
+#include <sys/mman.h>
 
-/* Macros */
+/* Macros (only used during development) */
 #if defined(__GNUC__) || defined(__clang__)
 #define Trap() __builtin_trap()
 #else
@@ -38,13 +41,12 @@
 /**
 * INTRO
 *
-* Heavy use of comments, attempt at full clarification of what's going on.
 * Long comments are not necessarily linked to immediate code before or after
 * them, nevertheless it reads fine.
 *
-* The code layout is not very efficient but it exposes the underlying ideas
-* very clearly, since the design is fully flat. You can read the code (not
-* the headers) from top to bottom and understand everything.
+* The code layout is not very efficient but it attempts to expose the 
+* underlying ideas very clearly; the design is fully flat. You can read the 
+* code from top to bottom and understand everything.
 *
 * Fidelity with original resources is not guaranteed.
 *
@@ -73,6 +75,33 @@
 * FFFF
 * 
 */
+
+/* Device/Memory Mapped Registers (see MEMORY MAP) */
+enum
+{
+    __KBSR = 0xFE00, /* Keyboard Status, has any key been pressed?   */
+    __KBDR = 0xFE02, /* Keyboard Data,   what key has been pressed?  */
+    __DSR  = 0xFE04, /* Display Status,  display ready to print?     */
+    __DDR  = 0xFE06, /* Display Data,    display written char        */
+    __MCR  = 0xFEEE  /* Machine Control, clock enable/disable        */
+};
+
+/* Trap Vector Table (see MEMORY MAP) */
+enum
+{
+    /* Read char from keyboard */
+    __GETC  = 0x20,
+    /* Write char to the console display */
+    __OUT   = 0x21,
+    /* Write string, one char per word */
+    __PUTS  = 0x22,
+    /* Read char from keyboard and echo onto terminal */
+    __IN    = 0x23,
+    /* Write string, one char per byte, two bytes per word */
+    __PUTSP = 0x24,
+    /* Halt execution and print msg on console */
+    __HALT  = 0x25
+};
 
 enum { MAX_MEM = (1 << 16) }; /* 2**16 -> 65536 mem locations */
 uint16_t mem[MAX_MEM]; 
@@ -151,34 +180,8 @@ enum {      /* Instruction name                         Opcode              */
     TRAP    /* System Call                              1111                */
 };
 
-/* Trap Vector Table (see MEMORY MAP) */
-enum
-{
-    /* Read char from keyboard */
-    __GETC  = 0x20,
-    /* Write char to the console display */
-    __OUT   = 0x21,
-    /* Write string, one char per word */
-    __PUTS  = 0x22,
-    /* Read char from keyboard and echo onto terminal */
-    __IN    = 0x23,
-    /* Write string, one char per byte, two bytes per word */
-    __PUTSP = 0x24,
-    /* Halt execution and print msg on console */
-    __HALT  = 0x25
-};
-
-/* Device/Memory Mapped Registers (see MEMORY MAP) */
-enum
-{
-    __KBSR = 0xFE00, /* Keyboard Status, has any key been pressed?   */
-    __KBDR = 0xFE02, /* Keyboard Data,   what key has been pressed?  */
-    __DSR  = 0xFE04, /* Display Status,  display ready to print?     */
-    __DDR  = 0xFE06, /* Display Data,    display written char        */
-    __MCR  = 0xFEEE, /* Machine Control, clock enable/disable        */
-};
-
 struct termios original_tio;
+
 void
 disableinputbuffering(void)
 {
@@ -186,7 +189,8 @@ disableinputbuffering(void)
     tcgetattr(STDIN_FILENO, &original_tio);
     struct termios new_tio = original_tio;
     /* Disable canonical mode and echo */
-    new_tio.c_lflag &= ~(ICANON | ECHO);
+    //new_tio.c_lflag &= ~(ICANON | ECHO);
+    new_tio.c_lflag &= ~ICANON & ~ECHO;
     /* Apply the new configuration immediately */
     tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
 }
@@ -198,15 +202,7 @@ restoreinputbuffering(void)
     tcsetattr(STDIN_FILENO, TCSANOW, &original_tio);
 }
 
-void
-handleinterrupt(int signal)
-{
-    restoreinputbuffering();
-    write(STDIN_FILENO, "\n", 1); /* Signal safe */
-    exit(-2);
-}
-
-static uint16_t
+uint16_t
 checkkey(void)
 {
     struct pollfd fds[1]; /* Single file descriptor */
@@ -219,29 +215,12 @@ checkkey(void)
     return (ret > 0 && (fds[0].revents & POLLIN)) ? 1 : 0;
 }
 
-static uint16_t
-memread(uint16_t addr)
+void
+handleinterrupt(int signal)
 {
-    if (addr == __KBSR)
-    {
-        if (checkkey())
-        {
-            mem[__KBSR] = (1 << 15); /* bit[15], busy bit */
-            mem[__KBDR] = getchar();
-        }
-        else
-        {
-            mem[__KBSR] = 0;
-        }
-    }
-
-    return mem[addr];
-}
-
-static inline void
-memwrite(uint16_t addr, uint16_t value)
-{
-    mem[addr] = value;
+    restoreinputbuffering();
+    write(STDIN_FILENO, "\n", 1); /* Signal safe */
+    exit(-2);
 }
 
 /**
@@ -290,7 +269,7 @@ memwrite(uint16_t addr, uint16_t value)
 *             Recommended: https://www.youtube.com/watch?v=4qH4unVtJkE
 */
 
-static inline uint16_t
+uint16_t
 signextend(uint16_t n, int width)
 {
     /**
@@ -324,14 +303,14 @@ signextend(uint16_t n, int width)
     return n;
 }
 
-static inline uint16_t
+uint16_t
 swap16(uint16_t x)
 {
     return (x << 8) | (x >> 8);
     
 }
 
-static void 
+void 
 updateflags(const uint16_t r)
 {
     if      (reg[r] == 0)   reg[FLAGS] = FZRO;
@@ -339,7 +318,7 @@ updateflags(const uint16_t r)
     else                    reg[FLAGS] = FPOS;
 }
 
-static int
+int
 readimage(const char *filepath)
 {
     FILE *file;
@@ -376,15 +355,35 @@ readimage(const char *filepath)
     return 0; 
 }
 
+uint16_t
+memread(uint16_t addr)
+{
+    if (addr == __KBSR)
+    {
+        if (checkkey())
+        {
+            mem[__KBSR] = (1 << 15); /* bit[15], busy bit */
+            mem[__KBDR] = getchar();
+        }
+        else
+        {
+            mem[__KBSR] = 0;
+        }
+    }
+
+    return mem[addr];
+}
+
+void
+memwrite(uint16_t addr, uint16_t value)
+{
+    mem[addr] = value;
+}
 
 int
 main(int argc, const char **argv)
 {
     int j, alive; 
-
-    /* Disable default input buffering, we provide our own */
-    signal(SIGINT, handleinterrupt);
-    disableinputbuffering();
 
     if (argc < 2)
     {
@@ -401,6 +400,9 @@ main(int argc, const char **argv)
         }
     }
 
+    /* Disable default input buffering, we provide our own */
+    signal(SIGINT, handleinterrupt);
+    disableinputbuffering();
 
     /* Initial state: ZERO flag */
     reg[FLAGS] = FZRO;
@@ -432,8 +434,7 @@ main(int argc, const char **argv)
             if (immediate)
             {
                 /* imm5 can only store unsigned values <= 2^5=32 */
-                imm5 = instr & 0x1F; /* 0x1F=00011111; compare bottom 5 bits */
-                signextend(imm5, 5); /* 5-bit -> 16-bit value */
+                signextend(instr & 0x1F, 5); /* 0x1F=00011111 */
                 reg[DR] = reg[SR1] + imm5;
             }
             else
@@ -447,7 +448,7 @@ main(int argc, const char **argv)
         }
         case AND:
         {
-            uint16_t DR, SR1, SR2, imm5, immediate;
+            uint16_t DR, SR1, SR2, immediate, imm5;
 
             /* Destination Register, bits[11:9] */
             DR  = (instr >> 9) & 0x7; /* 0x7=0111;  compare bottom 3 bits */
@@ -460,8 +461,7 @@ main(int argc, const char **argv)
             if (immediate)
             {
                 /* imm5 can only store unsigned values <= 2^5=32 */
-                imm5 = instr & 0x1F; /* 0x1F=00011111; compare bottom 5 bits */
-                signextend(imm5, 5); /* 5-bit -> 16-bit value */
+                imm5 = signextend(instr & 0x1F, 5); /* 0x1F=00011111 */
                 reg[DR] = reg[SR1] & imm5;
             }
             else /* nonimmeditate */
@@ -662,20 +662,18 @@ main(int argc, const char **argv)
             if ((instr >> 11) & 0x1) /* Addressing mode: PC-relative */ {
                 /* Offset, bits[10:0] */
                 PCoffset11 = signextend(instr & 0x7FF, 11);
-                reg[PC] += PCoffset11;
+                reg[PC] += PCoffset11; /* JSR */
             }
             else
             {
                 /* Base Register, bits[8:6] */
                 BaseR = (instr >> 6) & 0x7;
-                reg[PC] = reg[BaseR]; /* Address from BaseR */
+                reg[PC] = reg[BaseR]; /* JSRR; Address from BaseR */
             }
             break;
         }
         case TRAP: 
         {
-            uint16_t trapvect8;
-
             /**
              * Save current PC into R7, after Trap Routine is handled code
              * jumps back to the **next** instruction after the Trap, unless
@@ -688,10 +686,10 @@ main(int argc, const char **argv)
              * LC-3 ISA requires trapvect8 to be zero extended to 16 bits. 
              * This is automatically achieved here by defining `trapvect8` as 
              * an unsigned 16-bit integer.
+             *
+             * trapvect8 = instr & 0xFF; 
              */
-            trapvect8 = instr & 0xFF; 
-
-            switch (trapvect8)
+            switch (instr & 0xFF)
             {
                 case __GETC:
                 {
@@ -771,18 +769,13 @@ main(int argc, const char **argv)
         case RES: /* unsupported */
         case RTI: /* unsupported */
         default:
-        {
             /* Error: Illegal opcodes */
             abort();
             break;
-        }
-
         }
     }
 
     /* Reset terminal configuration back to default */
     restoreinputbuffering();
-    return 0;
 } 
-
 
