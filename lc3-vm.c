@@ -434,7 +434,7 @@ main(int argc, const char **argv)
             if (immediate)
             {
                 /* imm5 can only store unsigned values <= 2^5=32 */
-                signextend(instr & 0x1F, 5); /* 0x1F=00011111 */
+                imm5 = signextend(instr & 0x1F, 5); /* 0x1F=00011111 */
                 reg[DR] = reg[SR1] + imm5;
             }
             else
