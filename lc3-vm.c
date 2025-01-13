@@ -181,7 +181,6 @@ enum {      /* Instruction name                         Opcode              */
 };
 
 struct termios original_tio;
-
 void
 disableinputbuffering(void)
 {
@@ -189,8 +188,7 @@ disableinputbuffering(void)
     tcgetattr(STDIN_FILENO, &original_tio);
     struct termios new_tio = original_tio;
     /* Disable canonical mode and echo */
-    //new_tio.c_lflag &= ~(ICANON | ECHO);
-    new_tio.c_lflag &= ~ICANON & ~ECHO;
+    new_tio.c_lflag &= ~(ICANON | ECHO);
     /* Apply the new configuration immediately */
     tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
 }
@@ -205,12 +203,12 @@ restoreinputbuffering(void)
 uint16_t
 checkkey(void)
 {
-    struct pollfd fds[1]; /* Single file descriptor */
-    fds[0].fd = STDIN_FILENO; /* Standard IN */
-    fds[0].events = POLLIN; /* Check for input data */
-
+    int ret;
+    struct pollfd fds[1];      /* Single file descriptor */
+    fds[0].fd = STDIN_FILENO;  /* Standard IN */
+    fds[0].events = POLLIN;    /* Check for input data */
     /* Poll with 0s timeout (non-blocking) */
-    int ret = poll(fds, 1, 0);
+    ret = poll(fds, 1, 0);
     /* Return 1 if data IN, 0 otherwise */
     return (ret > 0 && (fds[0].revents & POLLIN)) ? 1 : 0;
 }

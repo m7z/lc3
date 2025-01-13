@@ -2,10 +2,29 @@
 Written for educational and exploration purposes.
 No intent on keeping fidelity with the original work.
 
-# -- Relevant links 
-https://www.jmeiners.com/lc3-vm/ (main project trigger)
+see LICENSE
+
+## Build and run VM (tested on Debian systems)
+```
+cc lc3-vm.c -O3 -o lc3-vm
+./lc3-vm data/2048.obj
+./lc3-vm data/rogue.obj
+```
+
+# Debug
+```
+cc lc3-vm.c -Wall -Wextra -Og -o lc3-vm
+hexdump data/2048.obj # In another window/tab
+gdb ./lc3-vm
+...
+(gdb) run data/2048.obj
+...
+
+```
+## -- Relevant links 
+https://www.jmeiners.com/lc3-vm/supplies/lc3-isa.pdf (IMPORTANT !!!)
+https://www.jmeiners.com/lc3-vm/ 
 https://en.wikipedia.org/wiki/Little_Computer_3
-https://www.jmeiners.com/lc3-vm/supplies/lc3-isa.pdf
 https://highered.mheducation.com/sites/0072467509/student_view0/lc-3_simulator.html
 -- LC3-B 
 https://users.ece.utexas.edu/~patt/07s.360N/handouts/360n.appC.pdf
