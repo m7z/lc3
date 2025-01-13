@@ -1,5 +1,4 @@
 lc3-vm
-test/
 local/
 
 # Prerequisites
@@ -8,7 +7,6 @@ local/
 # Object files
 *.o
 *.ko
-*.obj
 *.elf
 
 # Linker output
