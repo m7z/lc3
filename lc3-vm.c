@@ -207,17 +207,20 @@ checkkey(void)
     struct pollfd fds[1];      /* Single file descriptor */
     fds[0].fd = STDIN_FILENO;  /* Standard IN */
     fds[0].events = POLLIN;    /* Check for input data */
-    /* Poll with 0s timeout (non-blocking) */
-    ret = poll(fds, 1, 0);
+    ret = poll(fds, 1, 0);     /* Poll with 0s timeout (non-blocking) */
     /* Return 1 if data IN, 0 otherwise */
     return (ret > 0 && (fds[0].revents & POLLIN)) ? 1 : 0;
 }
 
 void
-handleinterrupt(int signal)
+handleinterrupt(int signal __attribute__((unused))) 
 {
+    int ret;
     restoreinputbuffering();
-    write(STDIN_FILENO, "\n", 1); /* Signal safe */
+    ret = write(STDIN_FILENO, "\n", 1); /* Signal safe */
+    if (ret < 0) { 
+        perror("write() failed");
+    }
     exit(-2);
 }
 
@@ -692,10 +695,8 @@ main(int argc, const char **argv)
              * LC-3 ISA requires trapvect8 to be zero extended to 16 bits. 
              * This is automatically achieved here by defining `trapvect8` as 
              * an unsigned 16-bit integer.
-             *
-             * trapvect8 = instr & 0xFF; 
              */
-            switch (instr & 0xFF)
+            switch (instr & 0xFF) /* uint16_t trapvect8 = instr & 0xFF; */ 
             {
                 case __GETC:
                 {
@@ -764,7 +765,7 @@ main(int argc, const char **argv)
                 case __HALT:
                 {
                     /* HALT execution and print to the terminal */
-                    printf("HALT");
+                    puts("HALT");
                     fflush(stdout);
                     alive = 0;
                     break;
