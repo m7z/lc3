@@ -73,8 +73,7 @@
 */
 
 /* Device/Memory Mapped Registers (see MEMORY MAP) */
-enum
-{
+enum {
     __KBSR = 0xFE00, /* Keyboard Status, has any key been pressed?   */
     __KBDR = 0xFE02, /* Keyboard Data,   what key has been pressed?  */
     __DSR  = 0xFE04, /* Display Status,  display ready to print?     */
@@ -83,8 +82,7 @@ enum
 };
 
 /* Trap Vector Table (see MEMORY MAP) */
-enum
-{
+enum {
     /* Read char from keyboard */
     __GETC  = 0x20,
     /* Write char to the console display */
@@ -363,15 +361,11 @@ readimage(const char *filepath)
 uint16_t
 memread(uint16_t addr)
 {
-    if (addr == __KBSR)
-    {
-        if (checkkey())
-        {
+    if (addr == __KBSR) {
+        if (checkkey()) {
             mem[__KBSR] = (1 << 15); /* bit[15], busy bit */
             mem[__KBDR] = getchar();
-        }
-        else
-        {
+        } else {
             mem[__KBSR] = 0;
         }
     }
@@ -390,16 +384,13 @@ main(int argc, const char **argv)
 {
     int j, alive; 
 
-    if (argc < 2)
-    {
+    if (argc < 2) {
         printf("lc3 [file-image] ...\n");
         exit(2); /* invalid args */
     }
 
-    for (j = 1; j < argc; j++)
-    {
-        if (readimage(argv[j]) < 0)
-        {
+    for (j = 1; j < argc; j++) {
+        if (readimage(argv[j]) < 0) {
             printf("failed to load image: %s\n", argv[j]);
             exit(1);
         }
@@ -417,13 +408,11 @@ main(int argc, const char **argv)
     reg[PC] = PCSTART;
 
     alive = 1; /* set to 0 by HALT (Trap) */
-    while (alive)
-    {
+    while (alive) {
         /* FETCH */
         uint16_t instr = memread(reg[PC]++); /* read 16-bit instr */
         uint16_t op    = instr >> 12;        /* bits[15:12] set 4-bit opcode */
-        switch (op) /* DECODE */
-        {
+        switch (op) { /* DECODE */ 
         case ADD:
         {
             uint16_t DR, SR1, SR2, imm5, immediate;
@@ -436,14 +425,11 @@ main(int argc, const char **argv)
 
             /* bits[5] ? immediate mode : nonimmediate */
             immediate = (instr >> 5) & 0x1; /* 5th bit set? */
-            if (immediate)
-            {
+            if (immediate) {
                 /* imm5 can only store unsigned values <= 2^5=32 */
                 imm5 = signextend(instr & 0x1F, 5); /* 0x1F=00011111 */
                 reg[DR] = reg[SR1] + imm5;
-            }
-            else
-            {
+            } else {
                 SR2 = instr & 0x7; /* 0x7=0111; compare bottom 3 bits */
                 reg[DR] = reg[SR1] + reg[SR2];
             }
@@ -463,14 +449,11 @@ main(int argc, const char **argv)
 
             /* bits[5] ? immediate mode : nonimmediate */
             immediate = (instr >> 5) & 0x1; /* 5th bit set? */
-            if (immediate)
-            {
+            if (immediate) {
                 /* imm5 can only store unsigned values <= 2^5=32 */
                 imm5 = signextend(instr & 0x1F, 5); /* 0x1F=00011111 */
                 reg[DR] = reg[SR1] & imm5;
-            }
-            else /* nonimmeditate */
-            {
+            } else { /* nonimmeditate */
                 SR2 = instr & 0x7; /* 0x7=0111; compare bottom 3 bits */
                 reg[DR] = reg[SR1] & reg[SR2];
             }
@@ -613,8 +596,7 @@ main(int argc, const char **argv)
             PCoffset9 = signextend(instr & 0x1FF, 9);
             /* Procesor Flags, bits[11:9] */
             flagstate = (instr >> 9) & 0x7; 
-            if (flagstate & reg[FLAGS])
-            {
+            if (flagstate & reg[FLAGS]) {
                 /**
                  * Before the following assignment, the Program Counter's 
                  * current value is the BR instruction we are decoding.
@@ -664,13 +646,11 @@ main(int argc, const char **argv)
             uint16_t BaseR, PCoffset11;
             reg[R7] = reg[PC]; /* Save current PC into R7 for linkage */
 
-            if ((instr >> 11) & 0x1) /* Addressing mode: PC-relative */ {
+            if ((instr >> 11) & 0x1) { /* Addressing mode: PC-relative */
                 /* Offset, bits[10:0] */
                 PCoffset11 = signextend(instr & 0x7FF, 11);
                 reg[PC] += PCoffset11; /* JSR */
-            }
-            else
-            {
+            } else {
                 /* Base Register, bits[8:6] */
                 BaseR = (instr >> 6) & 0x7;
                 reg[PC] = reg[BaseR]; /* JSRR; Address from BaseR */
@@ -692,8 +672,7 @@ main(int argc, const char **argv)
              * This is automatically achieved here by defining `trapvect8` as 
              * an unsigned 16-bit integer.
              */
-            switch (instr & 0xFF) /* uint16_t trapvect8 = instr & 0xFF; */ 
-            {
+            switch (instr & 0xFF) { /* uint16_t trapvect8 = instr & 0xFF; */ 
                 case __GETC:
                 {
                     /* ASCII code copied into R0 */
@@ -708,8 +687,7 @@ main(int argc, const char **argv)
                      * specified by R0, strings are x0000-terminated 
                      */
                     uint16_t *ch = mem + reg[R0]; /* start of string */
-                    while (*ch) /* 0=false when *ch == 0x0000 */
-                    {
+                    while (*ch) { /* 0=false when *ch == 0x0000 */
                         putc((char)*ch, stdout);
                         ++ch;
                     }
@@ -725,8 +703,7 @@ main(int argc, const char **argv)
                      * bits[15:8] are written.
                      */
                      uint16_t *ch = mem + reg[R0]; /* start of string */
-                     while (*ch) /* 0=false when *ch == 0x0000 */
-                     {
+                     while (*ch) { /* 0=false when *ch == 0x0000 */
                          /* First char, bits[7:0] */
                          putc((char)(*ch & 0xFF), stdout);
                          /* Second char, bits[15:8] */
