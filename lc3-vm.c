@@ -12,11 +12,7 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
-//#include <fcntl.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <sys/termios.h>
-#include <sys/mman.h>
 
 /* Macros (only used during development) */
 #if defined(__GNUC__) || defined(__clang__)
