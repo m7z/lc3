@@ -12,7 +12,7 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <fcntl.h>
+//#include <fcntl.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/termios.h>
@@ -28,7 +28,7 @@
 #define AssertAlways(x) \
     do { \
         if(!(x)) { \
-        printf("\n%s(%d): assertion failed: %s\n", __FILE__, __LINE__, #x); \
+        printf("\n%s:%d: assertion failed: %s\n", __FILE__, __LINE__, #x); \
         Trap(); \
         } \
     } while(0)
@@ -323,13 +323,22 @@ readimage(const char *filepath)
     uint16_t *p; /* Pointer to the memory location for writing file data. */
     uint16_t addr_origin; /* start address from the file */
     uint16_t maxread; /* maxread ensures bounds */
-    size_t read; /* Number of 16-bit words read from the file */
+    size_t read_origin, read; /* Number of 16-bit words read from the file */
 
     file = fopen(filepath, "rb");
     if (!file) return -1; 
 
     /* Read the origin address (2 bytes) from the file. */
-    fread(&addr_origin, sizeof(addr_origin), 1, file);
+    read_origin = fread(&addr_origin, sizeof(addr_origin), 1, file);
+    if (read_origin != 1) {
+        if (feof(file)) {
+            fprintf(stderr, "Unexpected EOF\n");
+        } else if (ferror(file)) {
+            perror("Fail to read origin addr");
+        }
+        fclose(file);
+        return -1;
+    }
     /* LC-3 is Big Endian, host is not */
     addr_origin = swap16(addr_origin); 
 
@@ -343,8 +352,7 @@ readimage(const char *filepath)
     read = fread(p, sizeof(uint16_t), maxread, file);
 
     /* Convert each word read to the correct byte order */
-    while (read-- > 0)
-    {
+    while (read-- > 0) {
         *p = swap16(*p); 
         ++p; 
     }
