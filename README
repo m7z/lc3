@@ -4,18 +4,18 @@ No intent on keeping fidelity with the original work.
 
 see LICENSE
 
-## Build and run VM (tested on Debian systems)
+## Build and run VM (tested on Debian)
 ```
-cc lc3-vm.c -O3 -o lc3-vm
-./lc3-vm data/2048.obj
-./lc3-vm data/rogue.obj
+cc vm.c -O3 -o lc3
+./lc3 data/2048.obj
+./lc3 data/rogue.obj
 ```
 
 # Debug
 ```
-cc lc3-vm.c -Wall -Wextra -Og -o lc3-vm
+cc vm.c -Wall -Wextra -Og -o lc3
 hexdump data/2048.obj # In another window/tab
-gdb ./lc3-vm
+gdb ./lc3
 ...
 (gdb) run data/2048.obj
 ...
