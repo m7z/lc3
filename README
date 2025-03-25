@@ -1,8 +1,5 @@
 # Little Computer 3 Virtual Machine
-Written for educational and exploration purposes.
 No intent on keeping fidelity with the original work.
-
-see LICENSE
 
 ## Build and run VM (tested on Debian)
 ```
